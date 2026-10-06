@@ -72,9 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let transport = Arc::new(StdioTransport::new(read_rx, write_tx)) as Arc<dyn Transport>;
-    let handler = Arc::new(MemoryToolHandler {
-        actor: memory_actor_ref,
-    });
+    let handler = Arc::new(MemoryToolHandler::new(memory_actor_ref));
     let server = Server::new(transport, handler);
     server.start().await?;
     Ok(())

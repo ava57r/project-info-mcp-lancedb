@@ -66,7 +66,7 @@ impl MemoryActor {
 
         let parsed: Res = response.json().await.map_err(|e| e.to_string())?;
 
-        if let Some(d) = parsed.data.get(0) {
+        if let Some(d) = parsed.data.first() {
             Ok(d.embedding.clone())
         } else {
             Err("Model returned empty vectors array".to_string())
@@ -104,23 +104,21 @@ impl Message<UpsertMessage> for MemoryActor {
             .limit(1)
             .execute()
             .await
+            && let Some(Ok(batch)) = stream.next().await
+            && batch.num_rows() > 0
         {
-            if let Some(Ok(batch)) = stream.next().await
-                && batch.num_rows() > 0
-            {
-                if let Ok(hash_col_idx) = batch.schema().index_of("file_hash") {
-                    let hash_array = batch.column(hash_col_idx).as_string::<i32>();
-                    let old_hash = hash_array.value(0);
-                    if old_hash == current_hash {
-                        return Ok(format!(
-                            "ℹ️ [Kameo] Data for id '{}' didn't change (hash matches). Model inference skipped.",
-                            msg.id
-                        ));
-                    }
+            if let Ok(hash_col_idx) = batch.schema().index_of("file_hash") {
+                let hash_array = batch.column(hash_col_idx).as_string::<i32>();
+                let old_hash = hash_array.value(0);
+                if old_hash == current_hash {
+                    return Ok(format!(
+                        "ℹ️ [Kameo] Data for id '{}' didn't change (hash matches). Model inference skipped.",
+                        msg.id
+                    ));
                 }
-
-                let _ = self.table.delete(&predicate).await;
             }
+
+            let _ = self.table.delete(&predicate).await;
         }
 
         let vector = self.get_embedding_from_ovms(&msg.content).await?;
@@ -152,7 +150,6 @@ impl Message<UpsertMessage> for MemoryActor {
     }
 }
 
-// --- Реализация обработки подзадачи: Гибридный поиск ---
 impl Message<SearchMessage> for MemoryActor {
     type Reply = Result<String, String>;
 
