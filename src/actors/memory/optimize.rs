@@ -13,6 +13,6 @@ impl Message<OptimizeMessage> for MemoryActor {
     ) -> Self::Reply {
         let _ = self.table.optimize(Default::default()).await;
 
-        Ok(format!("🔍 Kameo subtask completed. Database optimized",))
+        Ok("🔍 Kameo subtask completed. Database optimized".to_string())
     }
 }

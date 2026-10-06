@@ -3,6 +3,7 @@ name = "project-info-mcp-lancedb"
 version = "0.1.0"
 edition = "2024"
 
+
 [dependencies]
 anyhow = "1.0"
 arrow-array = "58"
@@ -11,7 +12,7 @@ async-trait = "0.1"
 hex = "0.4"
 kameo = "0.22" 
 lancedb = { version = "0.39", features = ["remote"] }
-mcp-sdk-rs = "0.3"
+rust-mcp-sdk = { version = "2.0", features = ["stdio", "server"] }
 reqwest = { version = "0.13", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

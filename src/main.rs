@@ -3,16 +3,16 @@ mod config;
 mod helpers;
 mod mcp;
 
-use std::sync::Arc;
-
 use arrow_array::RecordBatch;
 use kameo::actor::Spawn;
 use lancedb::connect;
-use mcp_sdk_rs::server::Server;
-use mcp_sdk_rs::transport::{Transport, stdio::StdioTransport};
 use reqwest::Client;
-use tokio::io::AsyncWriteExt;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use rust_mcp_sdk::error::SdkResult;
+use rust_mcp_sdk::mcp_server::{McpServerOptions, server_runtime};
+use rust_mcp_sdk::schema::{Implementation, ServerCapabilities, ServerCapabilitiesTools};
+use rust_mcp_sdk::{
+    McpServer, ServerDetails, StdioTransport, ToMcpServerHandler, TransportOptions,
+};
 
 use crate::actors::embed;
 use crate::actors::memory::MemoryActor;
@@ -20,21 +20,26 @@ use crate::config::Config;
 use crate::mcp::MemoryToolHandler;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> SdkResult<()> {
     let config = Config::get_from_env();
-    let db_conn = connect(&config.db_dir).execute().await?;
+    let db_conn = connect(&config.db_dir).execute().await.map_err(|e| {
+        rust_mcp_sdk::error::McpSdkError::Internal {
+            description: e.to_string(),
+        }
+    })?;
 
     let table = match db_conn.open_table("project_memory").execute().await {
         Ok(t) => t,
-        Err(_) => {
-            db_conn
-                .create_table(
-                    "project_memory",
-                    RecordBatch::new_empty(helpers::table_schema()),
-                )
-                .execute()
-                .await?
-        }
+        Err(_) => db_conn
+            .create_table(
+                "project_memory",
+                RecordBatch::new_empty(helpers::table_schema()),
+            )
+            .execute()
+            .await
+            .map_err(|e| rust_mcp_sdk::error::McpSdkError::Internal {
+                description: e.to_string(),
+            })?,
     };
 
     let embed_actor_ref = embed::EmbeddingActor::spawn(embed::EmbeddingActor::new(
@@ -50,33 +55,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.vector_dimension,
     ));
 
-    let (read_tx, read_rx) = tokio::sync::mpsc::channel::<String>(64);
-    let (write_tx, mut write_rx) = tokio::sync::mpsc::channel::<String>(64);
+    let server_details = ServerDetails {
+        server_info: Implementation {
+            name: "project-info-mcp-lancedb".into(),
+            version: env!("CARGO_PKG_VERSION").into(),
+            title: Some("Project Info MCP (LanceDB)".into()),
+            description: Some("Persistent project memory over LanceDB with hybrid search".into()),
+            icons: vec![],
+            website_url: None,
+        },
+        capabilities: ServerCapabilities {
+            tools: Some(ServerCapabilitiesTools {
+                list_changed: Some(true),
+            }),
+            ..Default::default()
+        },
+        instructions: None,
+        meta: None,
+    };
 
-    tokio::spawn(async move {
-        let mut lines = BufReader::new(tokio::io::stdin()).lines();
-        while let Ok(Some(line)) = lines.next_line().await {
-            if read_tx.send(line).await.is_err() {
-                break;
-            }
-        }
+    let transport = StdioTransport::new(TransportOptions::default())?;
+    let handler = MemoryToolHandler::new(memory_actor_ref).to_mcp_server_handler();
+    let server = server_runtime::create_server(McpServerOptions {
+        transport,
+        handler,
+        server_details,
+        message_observer: None,
     });
-
-    tokio::spawn(async move {
-        let mut stdout = tokio::io::stdout();
-        while let Some(line) = write_rx.recv().await {
-            let failed = stdout.write_all(line.as_bytes()).await.is_err()
-                || stdout.write_all(b"\n").await.is_err()
-                || stdout.flush().await.is_err();
-            if failed {
-                break;
-            }
-        }
-    });
-
-    let transport = Arc::new(StdioTransport::new(read_rx, write_tx)) as Arc<dyn Transport>;
-    let handler = Arc::new(MemoryToolHandler::new(memory_actor_ref));
-    let server = Server::new(transport, handler);
-    server.start().await?;
-    Ok(())
+    server.start().await
 }
