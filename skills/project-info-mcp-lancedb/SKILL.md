@@ -1,7 +1,9 @@
-# Skill: Local Project Long-Term Memory (LanceDB via Kameo Actors)
+---
+name: project-info-mcp-lancedb
+description: This skill provides the AI agent with a high-performance, persistent long-term memory system optimized for local code repositories, enabling lightning-fast hybrid retrieval while conserving context window tokens and local compute resources
+---
 
-## Description
-This skill provides the AI agent with a high-performance, persistent long-term memory system optimized for local code repositories. It leverages an embedded **LanceDB** vector database running on top of a thread-safe **Kameo actor framework** in Rust. Vector generation is processed instantly using an isolated local **OpenVINO Model Server** (running `Qwen3-Embedding-0.6B-int4`) on the Intel GPU, enabling lightning-fast hybrid retrieval while conserving context window tokens and local compute resources.
+# Local Project Long-Term Memory
 
 ## Available Tools
 
