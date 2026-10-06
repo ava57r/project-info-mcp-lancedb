@@ -1,6 +1,7 @@
 mod actors;
 mod helpers;
 mod mcp;
+mod config;
 
 use std::sync::Arc;
 
@@ -14,16 +15,14 @@ use tokio::io::AsyncWriteExt;
 use tokio::io::{AsyncBufReadExt, BufReader};
 
 use crate::actors::memory::MemoryActor;
+use crate::config::Config;
 use crate::mcp::MemoryToolHandler;
 
-const DB_DIR: &str = "./.opencode_memory/kameo_db";
-const EMBED_URL: &str = "http://localhost:8002/v1/embeddings";
-const MODEL_NAME: &str = "qwen3-embed";
-const VECTOR_DIMENSION: usize = 1024;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let db_conn = connect(DB_DIR).execute().await?;
+    let config = Config::get_from_env();
+    let db_conn = connect(&config.db_dir).execute().await?;
 
     let table = match db_conn.open_table("project_memory").execute().await {
         Ok(t) => t,
@@ -41,9 +40,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let memory_actor_ref = MemoryActor::spawn(MemoryActor {
         table,
         http_client: Client::new(),
-        embed_url: EMBED_URL.to_string(),
-        model_name: MODEL_NAME.to_string(),
-        vector_dimension: VECTOR_DIMENSION,
+        embed_url: config.embed_url,
+        model_name: config.model_name,
+        vector_dimension: config.vector_dimension,
         pooling: None,
     });
 
