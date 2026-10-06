@@ -62,7 +62,7 @@ pub struct SearchProperties {
 #[async_trait]
 impl McpTool for SearchProjectInfo {
     fn name(&self) -> String {
-        "search_project_info".to_string()
+        "hybrid_search_memory".to_string()
     }
     fn description(&self) -> String {
         "Search project info".to_string()

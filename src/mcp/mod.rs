@@ -1,3 +1,4 @@
+pub mod optimize;
 pub mod search;
 pub mod upsert;
 
@@ -14,6 +15,7 @@ use mcp_sdk_rs::types::{
 use serde::{Deserialize, Serialize};
 
 use crate::actors::memory::MemoryActor;
+use crate::mcp::optimize::OptimizeProjectInfo;
 use crate::mcp::search::SearchProjectInfo;
 use crate::mcp::upsert::UpsertProjectInfo;
 
@@ -65,11 +67,16 @@ impl MemoryToolHandler {
     pub fn new(actor: ActorRef<MemoryActor>) -> Self {
         let upsert = Box::new(UpsertProjectInfo::new()) as Box<dyn McpTool + Send + Sync>;
         let search = Box::new(SearchProjectInfo::new()) as Box<dyn McpTool + Send + Sync>;
+        let optimize = Box::new(OptimizeProjectInfo::new()) as Box<dyn McpTool + Send + Sync>;
         Self {
             actor,
-            tools: [(upsert.name(), upsert), (search.name(), search)]
-                .into_iter()
-                .collect(),
+            tools: [
+                (upsert.name(), upsert),
+                (search.name(), search),
+                (optimize.name(), optimize),
+            ]
+            .into_iter()
+            .collect(),
         }
     }
 }

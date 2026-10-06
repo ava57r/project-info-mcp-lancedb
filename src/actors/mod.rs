@@ -1,3 +1,4 @@
+pub mod embed;
 pub mod memory;
 
 use serde::{Deserialize, Serialize};
@@ -15,3 +16,11 @@ pub struct SearchMessage {
     pub category: Option<String>,
     pub limit: usize,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct EmbeddingMessage {
+    pub query: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct OptimizeMessage {}

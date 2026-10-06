@@ -1,7 +1,7 @@
 mod actors;
+mod config;
 mod helpers;
 mod mcp;
-mod config;
 
 use std::sync::Arc;
 
@@ -14,10 +14,10 @@ use reqwest::Client;
 use tokio::io::AsyncWriteExt;
 use tokio::io::{AsyncBufReadExt, BufReader};
 
+use crate::actors::embed;
 use crate::actors::memory::MemoryActor;
 use crate::config::Config;
 use crate::mcp::MemoryToolHandler;
-
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -37,14 +37,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let memory_actor_ref = MemoryActor::spawn(MemoryActor {
+    let embed_actor_ref = embed::EmbeddingActor::spawn(embed::EmbeddingActor::new(
+        Client::new(),
+        config.embed_url,
+        config.model_name,
+        None,
+    ));
+
+    let memory_actor_ref = MemoryActor::spawn(MemoryActor::new(
         table,
-        http_client: Client::new(),
-        embed_url: config.embed_url,
-        model_name: config.model_name,
-        vector_dimension: config.vector_dimension,
-        pooling: None,
-    });
+        embed_actor_ref,
+        config.vector_dimension,
+    ));
 
     let (read_tx, read_rx) = tokio::sync::mpsc::channel::<String>(64);
     let (write_tx, mut write_rx) = tokio::sync::mpsc::channel::<String>(64);
