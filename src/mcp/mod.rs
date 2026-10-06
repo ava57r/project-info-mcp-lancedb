@@ -1,8 +1,11 @@
+#![allow(clippy::enum_variant_names)]
+
 pub mod optimize;
 pub mod search;
 pub mod upsert;
 
 use async_trait::async_trait;
+
 use kameo::actor::ActorRef;
 use rust_mcp_sdk::mcp_server::ServerHandler;
 use rust_mcp_sdk::schema::{
@@ -47,7 +50,7 @@ impl ServerHandler for MemoryToolHandler {
     ) -> std::result::Result<ListToolsResult, RpcError> {
         Ok(ListToolsResult {
             tools: MemoryTools::tools(),
-            cache_scope: ListToolsResultCacheScope::Private,
+            cache_scope: ListToolsResultCacheScope::Public,
             result_type: "complete".to_string(),
             ttl_ms: 0,
             meta: None,
@@ -162,14 +165,162 @@ impl ServerHandler for MemoryToolHandler {
 
     async fn handle_custom_request(
         &self,
-        _request: CustomRequest,
+        request: CustomRequest,
         _context: &RequestContext,
-        _runtime: std::sync::Arc<dyn McpServer>,
+        runtime: std::sync::Arc<dyn McpServer>,
     ) -> std::result::Result<GenericResult, RpcError> {
+        // Compatibility shim: rust-mcp-sdk 2.0 targets the 2026-07-28
+        // protocol where every request carries a required `_meta`. Classic
+        // clients (OpenCode) omit it, so untagged deserialization misses the
+        // standard variants and standard methods (`initialize`, `tools/list`,
+        // ...) land here as `CustomRequest`. Dispatch them manually.
+        match request.method.as_str() {
+            "initialize" => Self::initialize_result(runtime),
+            "tools/list" => Self::tools_list_result(),
+            "resources/list" => Self::empty_list_result("resources"),
+            "resources/templates/list" => Self::empty_list_result("resourceTemplates"),
+            "prompts/list" => Self::empty_list_result("prompts"),
+            "completion/complete" => Self::empty_completion_result(),
+            "tools/call" => self.call_tool_from_custom(request).await,
+            "ping" => Ok(GenericResult {
+                result_type: "complete".to_string(),
+                meta: None,
+                extra: None,
+            }),
+            // `notifications/initialized` arrives as notification, but handle
+            // it here too in case a client sends it as request.
+            "notifications/initialized" => Ok(GenericResult {
+                result_type: "complete".to_string(),
+                meta: None,
+                extra: None,
+            }),
+            other => Err(RpcError::method_not_found()
+                .with_message(format!("No handler is implemented for '{other}'."))),
+        }
+    }
+}
+
+impl MemoryToolHandler {
+    /// Classic MCP handshake payload (the active 2026 schema dropped
+    /// `InitializeResult`, so it is built manually as JSON).
+    fn initialize_result(
+        runtime: std::sync::Arc<dyn McpServer>,
+    ) -> std::result::Result<GenericResult, RpcError> {
+        let details = runtime.server_details();
+        let mut extra = serde_json::Map::new();
+        extra.insert(
+            "protocolVersion".to_string(),
+            serde_json::Value::String("2025-11-25".to_string()),
+        );
+        extra.insert(
+            "capabilities".to_string(),
+            serde_json::json!({"tools": {"listChanged": true}}),
+        );
+        extra.insert(
+            "serverInfo".to_string(),
+            serde_json::json!({
+                "name": "project-info-mcp-lancedb",
+                "version": env!("CARGO_PKG_VERSION"),
+                "title": "Project Info MCP (LanceDB)",
+                "description": "Persistent project memory over LanceDB with hybrid search",
+            }),
+        );
+        if let Some(instructions) = details.instructions.clone() {
+            extra.insert(
+                "instructions".to_string(),
+                serde_json::Value::String(instructions),
+            );
+        }
         Ok(GenericResult {
             result_type: "complete".to_string(),
             meta: None,
-            extra: None,
+            extra: Some(extra),
+        })
+    }
+
+    /// Serialized `ListToolsResult` with the real tool definitions, so
+    /// classic clients that omit `_meta` still discover our tools.
+    fn tools_list_result() -> std::result::Result<GenericResult, RpcError> {
+        let tools = serde_json::to_value(MemoryTools::tools()).map_err(|e| {
+            RpcError::internal_error().with_message(format!("failed to serialize tools: {e}"))
+        })?;
+        let mut extra = serde_json::Map::new();
+        extra.insert("tools".to_string(), tools);
+        Ok(GenericResult {
+            result_type: "complete".to_string(),
+            meta: None,
+            extra: Some(extra),
+        })
+    }
+
+    /// Empty paginated-list payload (`resources`, `prompts`, ...).
+    fn empty_list_result(key: &str) -> std::result::Result<GenericResult, RpcError> {
+        let mut extra = serde_json::Map::new();
+        extra.insert(key.to_string(), serde_json::Value::Array(vec![]));
+        Ok(GenericResult {
+            result_type: "complete".to_string(),
+            meta: None,
+            extra: Some(extra),
+        })
+    }
+
+    /// Empty `completion/complete` payload.
+    fn empty_completion_result() -> std::result::Result<GenericResult, RpcError> {
+        let mut extra = serde_json::Map::new();
+        extra.insert(
+            "completion".to_string(),
+            serde_json::json!({"values": [], "hasMore": false, "total": 0}),
+        );
+        Ok(GenericResult {
+            result_type: "complete".to_string(),
+            meta: None,
+            extra: Some(extra),
+        })
+    }
+
+    /// `tools/call` arriving as `CustomRequest` (classic client omitted the
+    /// required `_meta`, so untagged deserialization missed the standard
+    /// variant). Parses `name`/`arguments` manually and runs the tool.
+    async fn call_tool_from_custom(
+        &self,
+        request: CustomRequest,
+    ) -> std::result::Result<GenericResult, RpcError> {
+        let params = request.params.clone().unwrap_or_default();
+        let name = params
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                RpcError::invalid_params().with_message("missing tool 'name'".to_string())
+            })?;
+        let arguments = params
+            .get("arguments")
+            .and_then(serde_json::Value::as_object)
+            .cloned();
+        let tool_params = CallToolRequestParams {
+            name: name.to_string(),
+            arguments,
+            meta: Default::default(),
+            input_responses: None,
+            request_state: None,
+        };
+        let tool = MemoryTools::try_from(tool_params).map_err(|e| {
+            RpcError::invalid_params().with_message(format!("unknown tool '{name}': {e:?}"))
+        })?;
+        let text = match tool {
+            MemoryTools::UpsertProjectInfo(args) => upsert::execute(self.actor.clone(), args).await,
+            MemoryTools::SearchProjectInfo(args) => search::execute(self.actor.clone(), args).await,
+            MemoryTools::OptimizeProjectInfo(_) => optimize::execute(self.actor.clone()).await,
+        };
+        let mut extra = serde_json::Map::new();
+        extra.insert(
+            "content".to_string(),
+            serde_json::json!([{"type": "text", "text": text}]),
+        );
+        extra.insert("isError".to_string(), serde_json::Value::Bool(false));
+        Ok(GenericResult {
+            result_type: "complete".to_string(),
+            meta: None,
+            extra: Some(extra),
         })
     }
 }

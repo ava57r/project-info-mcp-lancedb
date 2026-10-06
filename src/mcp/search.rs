@@ -24,6 +24,6 @@ pub async fn execute(
     };
     match actor.ask(msg).await {
         Ok(text) => text,
-        Err(_) => "❌ Failed to send message to Kameo actor".to_string(),
+        Err(e) => format!("❌ Failed to send message to Kameo actor: {e}"),
     }
 }

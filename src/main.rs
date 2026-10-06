@@ -3,6 +3,8 @@ mod config;
 mod helpers;
 mod mcp;
 
+use std::collections::BTreeMap;
+
 use arrow_array::RecordBatch;
 use kameo::actor::Spawn;
 use lancedb::connect;
@@ -33,7 +35,7 @@ async fn main() -> SdkResult<()> {
         Err(_) => db_conn
             .create_table(
                 "project_memory",
-                RecordBatch::new_empty(helpers::table_schema()),
+                RecordBatch::new_empty(helpers::table_schema(config.vector_dimension)),
             )
             .execute()
             .await
@@ -67,6 +69,14 @@ async fn main() -> SdkResult<()> {
         capabilities: ServerCapabilities {
             tools: Some(ServerCapabilitiesTools {
                 list_changed: Some(true),
+            }),
+            experimental: Some({
+                let mut exp = BTreeMap::new();
+                exp.insert(
+                    "customRequests".to_string(),
+                    rust_mcp_sdk::schema::JsonObject(BTreeMap::new()),
+                );
+                exp
             }),
             ..Default::default()
         },

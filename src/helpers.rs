@@ -1,16 +1,19 @@
 use std::sync::Arc;
 
-use arrow_array::builder::{Float32Builder, Int64Builder, ListBuilder, StringBuilder};
+use arrow_array::builder::{FixedSizeListBuilder, Float32Builder, Int64Builder, StringBuilder};
 use arrow_array::{ArrayRef, RecordBatch};
 use arrow_schema::{DataType, Field, Schema};
 
-pub fn table_schema() -> Arc<Schema> {
+pub fn table_schema(dimension: usize) -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("id", DataType::Utf8, false),
         Field::new("content", DataType::Utf8, false),
         Field::new(
             "vector",
-            DataType::List(Arc::new(Field::new("item", DataType::Float32, true))),
+            DataType::FixedSizeList(
+                Arc::new(Field::new("item", DataType::Float32, true)),
+                dimension as i32,
+            ),
             false,
         ),
         Field::new("category", DataType::Utf8, false),
@@ -28,7 +31,7 @@ pub fn build_arrow_record(
     vector: Vec<f32>,
     dimension: usize,
 ) -> Result<RecordBatch, String> {
-    let schema = table_schema();
+    let schema = table_schema(dimension);
 
     let mut id_builder = StringBuilder::with_capacity(1, id.len());
     let mut content_builder = StringBuilder::with_capacity(1, content.len());
@@ -37,7 +40,8 @@ pub fn build_arrow_record(
     let mut ts_builder = Int64Builder::with_capacity(1);
 
     let values_builder = Float32Builder::with_capacity(dimension);
-    let mut vector_builder = ListBuilder::with_capacity(values_builder, 1);
+    let mut vector_builder =
+        FixedSizeListBuilder::new(values_builder, i32::try_from(dimension).unwrap_or(1024));
 
     id_builder.append_value(id);
     content_builder.append_value(content);
