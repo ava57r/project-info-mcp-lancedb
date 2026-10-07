@@ -19,6 +19,7 @@ pub struct SaveFileDescription {
     pub description: String,
 }
 
+/// Executes the save-file tool by upserting the file description under the `file` category.
 pub async fn execute(actor: ActorRef<ProjectInfoActor>, args: SaveFileDescription) -> String {
     let msg = UpsertMessage {
         id: args.file_path,

@@ -37,11 +37,13 @@ tool_box!(
     ]
 );
 
+/// MCP server handler that dispatches tool calls to the `ProjectInfoActor`.
 pub struct MemoryToolHandler {
     actor: ActorRef<ProjectInfoActor>,
 }
 
 impl MemoryToolHandler {
+    /// Creates a handler that dispatches tool calls to the given project info actor.
     pub fn new(actor: ActorRef<ProjectInfoActor>) -> Self {
         Self { actor }
     }
@@ -49,6 +51,7 @@ impl MemoryToolHandler {
 
 #[async_trait]
 impl ServerHandler for MemoryToolHandler {
+    /// Lists the available memory tools.
     async fn handle_list_tools_request(
         &self,
         _request: Option<PaginatedRequestParams>,
@@ -65,6 +68,7 @@ impl ServerHandler for MemoryToolHandler {
         })
     }
 
+    /// Dispatches a tool call to the matching `execute` function.
     async fn handle_call_tool_request(
         &self,
         params: CallToolRequestParams,
@@ -104,6 +108,7 @@ impl ServerHandler for MemoryToolHandler {
         })
     }
 
+    /// Returns an empty resource-template list (tools-only server).
     async fn handle_list_resource_templates_request(
         &self,
         _request: Option<PaginatedRequestParams>,
@@ -120,6 +125,7 @@ impl ServerHandler for MemoryToolHandler {
         })
     }
 
+    /// Rejects resource reads: this server exposes no resources.
     async fn handle_read_resource_request(
         &self,
         _params: ReadResourceRequestParams,
@@ -130,6 +136,7 @@ impl ServerHandler for MemoryToolHandler {
             .with_message("No resources are exposed by this server.".to_string()))
     }
 
+    /// Returns an empty prompt list (tools-only server).
     async fn handle_list_prompts_request(
         &self,
         _request: Option<PaginatedRequestParams>,
@@ -146,6 +153,7 @@ impl ServerHandler for MemoryToolHandler {
         })
     }
 
+    /// Rejects prompt reads: this server exposes no prompts.
     async fn handle_get_prompt_request(
         &self,
         _params: GetPromptRequestParams,
@@ -156,6 +164,7 @@ impl ServerHandler for MemoryToolHandler {
             .with_message("No prompts are exposed by this server.".to_string()))
     }
 
+    /// Returns an empty completion result.
     async fn handle_complete_request(
         &self,
         _params: CompleteRequestParams,
@@ -173,6 +182,7 @@ impl ServerHandler for MemoryToolHandler {
         })
     }
 
+    /// Handles requests that missed standard deserialization (classic-client compatibility shim).
     async fn handle_custom_request(
         &self,
         request: CustomRequest,

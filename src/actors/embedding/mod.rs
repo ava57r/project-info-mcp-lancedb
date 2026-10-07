@@ -12,6 +12,7 @@ use response::EmbeddingResponse;
 
 pub const ENCODING_FORMAT: &str = "float";
 
+/// Kameo actor that requests text embeddings from an OpenAI-compatible HTTP endpoint.
 pub struct EmbeddingActor {
     http_client: Client,
     embeddings_url: String,
@@ -20,6 +21,7 @@ pub struct EmbeddingActor {
 }
 
 impl EmbeddingActor {
+    /// Creates the actor with the given HTTP client, embeddings endpoint URL, model name, and optional pooling strategy.
     pub fn new(
         http_client: Client,
         embeddings_url: String,
@@ -40,6 +42,7 @@ impl Actor for EmbeddingActor {
 
     type Error = anyhow::Error;
 
+    /// Creates the actor from the arguments provided at spawn time.
     async fn on_start(args: Self::Args, _actor_ref: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(args)
     }
@@ -48,6 +51,7 @@ impl Actor for EmbeddingActor {
 impl Message<EmbeddingMessage> for EmbeddingActor {
     type Reply = Result<Vec<f32>, String>;
 
+    /// Posts the query text to the embeddings endpoint and replies with the first returned vector.
     async fn handle(
         &mut self,
         msg: EmbeddingMessage,

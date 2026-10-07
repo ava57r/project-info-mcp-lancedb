@@ -19,6 +19,7 @@ struct SearchMatch {
 impl Message<SearchMessage> for ProjectInfoActor {
     type Reply = Result<String, String>;
 
+    /// Embeds the query, runs hybrid vector + full-text search, and replies with formatted matches.
     async fn handle(
         &mut self,
         msg: SearchMessage,

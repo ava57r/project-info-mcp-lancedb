@@ -6,6 +6,7 @@ use crate::actors::project_info::ProjectInfoActor;
 impl Message<OptimizeMessage> for ProjectInfoActor {
     type Reply = Result<String, String>;
 
+    /// Optimizes the LanceDB table and replies with a confirmation message.
     async fn handle(
         &mut self,
         _msg: OptimizeMessage,

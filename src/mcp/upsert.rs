@@ -13,6 +13,7 @@ pub struct UpsertProjectInfo {
     pub category: String,
 }
 
+/// Executes the upsert tool by forwarding the arguments to the project info actor.
 pub async fn execute(
     actor: ActorRef<crate::actors::project_info::ProjectInfoActor>,
     args: UpsertProjectInfo,

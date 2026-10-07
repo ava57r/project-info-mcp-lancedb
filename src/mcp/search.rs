@@ -13,6 +13,7 @@ pub struct SearchProjectInfo {
     pub limit: u64,
 }
 
+/// Executes the search tool by forwarding the arguments to the project info actor.
 pub async fn execute(
     actor: ActorRef<crate::actors::project_info::ProjectInfoActor>,
     args: SearchProjectInfo,

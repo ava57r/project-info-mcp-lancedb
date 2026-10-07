@@ -4,6 +4,8 @@ use arrow_array::builder::{FixedSizeListBuilder, Float32Builder, Int64Builder, S
 use arrow_array::{ArrayRef, RecordBatch};
 use arrow_schema::{DataType, Field, Schema};
 
+/// Builds the Arrow table schema (`id`, `content`, `vector`, `category`, `file_hash`, `timestamp`)
+/// with a fixed-size float vector of the given embedding dimension.
 pub fn table_schema(dimension: usize) -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("id", DataType::Utf8, false),
@@ -22,6 +24,12 @@ pub fn table_schema(dimension: usize) -> Arc<Schema> {
     ]))
 }
 
+/// Builds a single Arrow `RecordBatch` containing one project info record with its embedding vector.
+///
+/// # Errors
+///
+/// Returns an error when `vector` length does not match `dimension`, or when the
+/// resulting `RecordBatch` fails schema validation.
 pub fn build_arrow_record(
     id: &str,
     content: &str,
