@@ -37,3 +37,7 @@ pub struct EmbeddingMessage {
 /// Message requesting compaction / optimization of the LanceDB table.
 #[derive(Serialize, Deserialize)]
 pub struct OptimizeMessage {}
+
+/// Message requesting usage statistics about the project memory table.
+#[derive(Serialize, Deserialize)]
+pub struct StatsMessage {}

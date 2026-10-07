@@ -83,6 +83,7 @@ Add to `opencode.json`:
 | `save_file_description` | `file_path: string` (relative path — unique id) <br> `description: string` (what the file does, key functions/types) | Upserts a `file`-category record keyed by file path; unchanged descriptions (SHA-256) skip embedding, re-saving the same path overwrites the previous record. |
 | `hybrid_search_memory` | `query: string` <br> `limit: integer` <br> `category?: string` | Embeds `query`, ensures an FTS index on `content`, then runs `nearest_to(vector).limit(n)` with optional `category = '...'` predicate. Returns each match as `[category] id (distance)` plus its `content` — use `category: "file"` to search file descriptions. |
 | `optimize_database` | _(none — must be called with no arguments)_ | Runs LanceDB `optimize()` / compaction on the table. |
+| `memory_stats` | _(none — must be called with no arguments)_ | Reports total record count, per-category breakdown, and content size (total/avg chars) via a single column-projection scan; no embedding inference. |
 
 ## Architecture
 
@@ -98,8 +99,8 @@ stdin (JSON-RPC) → StdioTransport → Server(MemoryToolHandler)
 - `src/main.rs` — stdio wiring, table open/create, actor spawn, MCP `Server::start()`.
 - `src/config.rs` — `Config::get_from_env()` with defaults above.
 - `src/actors/embed.rs` — `EmbeddingActor`: `POST {input, model, encoding_format:"float"}` → `Vec<f32>`.
-- `src/actors/memory/{mod,upsert,search,optimize}.rs` — LanceDB queries, hash dedup, FTS index creation.
-- `src/mcp/{mod,upsert,search,optimize,save_file}.rs` — `McpTool` impls (`tools/list`, `tools/call`).
+- `src/actors/memory/{mod,upsert,search,optimize,stats}.rs` — LanceDB queries, hash dedup, FTS index creation.
+- `src/mcp/{mod,upsert,search,optimize,save_file,stats}.rs` — `McpTool` impls (`tools/list`, `tools/call`).
 - `src/helpers.rs` — `table_schema()` + `build_arrow_record()` (validates `vector.len() == VECTOR_DIMENSION`).
 
 ## Development

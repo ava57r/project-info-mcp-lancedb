@@ -4,6 +4,7 @@
 pub mod optimize;
 pub mod save_file;
 pub mod search;
+pub mod stats;
 pub mod upsert;
 
 use async_trait::async_trait;
@@ -25,6 +26,7 @@ use crate::actors::project_info::ProjectInfoActor;
 use crate::mcp::optimize::OptimizeProjectInfo;
 use crate::mcp::save_file::SaveFileDescription;
 use crate::mcp::search::SearchProjectInfo;
+use crate::mcp::stats::MemoryStats;
 use crate::mcp::upsert::UpsertProjectInfo;
 
 // Generates `MemoryTools` enum with `tools()` and `TryFrom<CallToolRequestParams>`.
@@ -34,7 +36,8 @@ tool_box!(
         UpsertProjectInfo,
         SearchProjectInfo,
         OptimizeProjectInfo,
-        SaveFileDescription
+        SaveFileDescription,
+        MemoryStats
     ]
 );
 
@@ -84,6 +87,7 @@ impl ServerHandler for MemoryToolHandler {
             }
             MemoryTools::SearchProjectInfo(args) => search::execute(self.actor.clone(), args).await,
             MemoryTools::OptimizeProjectInfo(_) => optimize::execute(self.actor.clone()).await,
+            MemoryTools::MemoryStats(_) => stats::execute(self.actor.clone()).await,
         };
         Ok(ServerResult::from(CallToolResult::text_content(vec![
             TextContent::from(text),
@@ -334,6 +338,7 @@ impl MemoryToolHandler {
             }
             MemoryTools::SearchProjectInfo(args) => search::execute(self.actor.clone(), args).await,
             MemoryTools::OptimizeProjectInfo(_) => optimize::execute(self.actor.clone()).await,
+            MemoryTools::MemoryStats(_) => stats::execute(self.actor.clone()).await,
         };
         let mut extra = serde_json::Map::new();
         extra.insert(

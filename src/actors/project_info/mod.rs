@@ -2,6 +2,7 @@
 
 pub mod optimize;
 pub mod search;
+pub mod stats;
 pub mod upsert;
 
 use kameo::actor::{Actor, ActorRef};
