@@ -32,6 +32,10 @@ description: This skill provides the AI agent with a high-performance, persisten
 ### 4. `optimize_database`
 *   **Purpose:** Triggers file compaction, merges small Arrow record batches, and garbage-collects historical timeline versions within the LanceDB table to optimize disk I/O and maintain low-latency lookups.
 
+### 5. `memory_stats`
+*   **Purpose:** Reports memory usage statistics — total record count, per-category breakdown, and content size (total/avg chars) — so you can watch how full the memory is without reading every record. Takes no arguments (call with `{}`).
+*   **When to use:** at session start to gauge memory size, before a big file-catalog walk to see what's already stored, or when deciding whether to compact (`optimize_database`) or prune stale records.
+
 ## Operational Rules & Behavioral Guidelines
 
 ### 1. Token Economy (Proactive Context Offloading)
@@ -64,3 +68,7 @@ description: This skill provides the AI agent with a high-performance, persisten
 ### 5. Precision Token Matching
 *   When a user asks about specific system internals (e.g., *"Where do we validate JWT tokens?"*), do not guess. Invoke `hybrid_search_memory` with the method name or keyword. The hybrid FTS (Full-Text Search) engine will locate exact lexical matches, while the vector engine fetches surrounding semantic contexts.
 *   To find usages of a function, type, or constant across the project, call `hybrid_search_memory` with `category: "file"` and the symbol name as `query`: the reply lists matching file paths with their stored descriptions — open the top hits and grep for the symbol to confirm exact usages.
+
+### 6. How to Watch Memory Usage (`memory_stats`)
+*   Call `memory_stats` (no arguments) to see total record count, per-category breakdown, and content size (total/avg chars) — no embedding inference, so it is cheap.
+*   **When:** at session start to gauge what's already stored, before a file-catalog walk to avoid re-saving, or when deciding whether to run `optimize_database` / prune stale records.

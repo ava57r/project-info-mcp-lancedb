@@ -37,4 +37,7 @@ Use it strategically to minimize context window usage and speed up inference acc
 *   **Constraint Checking:** When you need to recall architectural agreements (always apply the filter `category: "architecture"` to narrow down results).
 *   **Exact Matching:** When looking for precise function names, variables, type definitions, or specific error-handling logic.
 
+### 6. How to Watch Memory Usage (`memory_stats`):
+*   Call `memory_stats` (no arguments) to see total record count, per-category breakdown, and content size (total/avg chars). It runs no embedding inference, so it is cheap — use it at session start to gauge what's stored, before a file-catalog walk to avoid re-saving, or when deciding whether to run `optimize_database` / prune stale records.
+
 Optimize local GPU resources: Do not perform repetitive upserts if you know the file or concept contents have not changed.
