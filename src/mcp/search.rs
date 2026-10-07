@@ -7,7 +7,7 @@ use rust_mcp_sdk::macros::{JsonSchema, mcp_tool};
 pub struct SearchProjectInfo {
     /// Search query.
     pub query: String,
-    /// Record category (for example, 'architecture', 'todo', 'api', 'changelog', etc.).
+    /// Record category filter (for example, 'file', 'architecture', 'todo', 'changelog', etc.).
     pub category: Option<String>,
     /// Maximum number of results to return.
     pub limit: u64,

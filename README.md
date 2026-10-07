@@ -9,6 +9,7 @@ Built with `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), `lancedb` for
 - **Persistent memory** — `project_memory` LanceDB table (`id`, `content`, `vector`, `category`, `file_hash`, `timestamp`).
 - **Hybrid search** — ANN vector search over embeddings + FTS index on `content`, with optional `category` filter.
 - **Content-aware upsert** — SHA-256 `file_hash` check skips embedding inference when content is unchanged; otherwise delete + re-insert.
+- **File catalog** — `save_file_description` stores one `file`-category record per source file; the relative file path is the unique id, so re-saving a path overwrites its previous description.
 - **Actor isolation** — `ProjectInfoActor` owns the LanceDB table; `EmbeddingActor` owns the HTTP client for the embeddings API.
 - **Zero-config defaults** — works out of the box against `http://localhost:8002/v1/embeddings`.
 
@@ -79,7 +80,8 @@ Add to `opencode.json`:
 | Tool | Arguments | What it does |
 |---|---|---|
 | `upsert_project_info` | `info_id: string` (unique key, e.g. file path or task ID) <br> `content: string` (discrete fact / short text) <br> `category: string` (e.g. `architecture`, `todo`, `api`, `changelog`) | Hashes `content` (SHA-256); skips inference if hash matches existing row; otherwise embeds content via `EmbeddingActor` and `add()`s an Arrow record with current unix timestamp. |
-| `hybrid_search_memory` | `query: string` <br> `limit: integer` <br> `category?: string` | Embeds `query`, ensures an FTS index on `content`, then runs `nearest_to(vector).limit(n)` with optional `category = '...'` predicate. |
+| `save_file_description` | `file_path: string` (relative path — unique id) <br> `description: string` (what the file does, key functions/types) | Upserts a `file`-category record keyed by file path; unchanged descriptions (SHA-256) skip embedding, re-saving the same path overwrites the previous record. |
+| `hybrid_search_memory` | `query: string` <br> `limit: integer` <br> `category?: string` | Embeds `query`, ensures an FTS index on `content`, then runs `nearest_to(vector).limit(n)` with optional `category = '...'` predicate. Returns each match as `[category] id (distance)` plus its `content` — use `category: "file"` to search file descriptions. |
 | `optimize_database` | _(none — must be called with no arguments)_ | Runs LanceDB `optimize()` / compaction on the table. |
 
 ## Architecture
@@ -97,7 +99,7 @@ stdin (JSON-RPC) → StdioTransport → Server(MemoryToolHandler)
 - `src/config.rs` — `Config::get_from_env()` with defaults above.
 - `src/actors/embed.rs` — `EmbeddingActor`: `POST {input, model, encoding_format:"float"}` → `Vec<f32>`.
 - `src/actors/memory/{mod,upsert,search,optimize}.rs` — LanceDB queries, hash dedup, FTS index creation.
-- `src/mcp/{mod,upsert,search,optimize}.rs` — `McpTool` impls (`tools/list`, `tools/call`).
+- `src/mcp/{mod,upsert,search,optimize,save_file}.rs` — `McpTool` impls (`tools/list`, `tools/call`).
 - `src/helpers.rs` — `table_schema()` + `build_arrow_record()` (validates `vector.len() == VECTOR_DIMENSION`).
 
 ## Development

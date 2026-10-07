@@ -9,7 +9,7 @@ pub struct UpsertProjectInfo {
     pub info_id: String,
     /// Discrete facts or short content text.
     pub content: String,
-    /// Record category (for example, 'architecture', 'todo', 'api', 'changelog', etc.).
+    /// Record category (for example, 'architecture', 'file', 'todo', 'api', 'changelog', etc.).
     pub category: String,
 }
 

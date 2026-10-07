@@ -1,6 +1,7 @@
 #![allow(clippy::enum_variant_names)]
 
 pub mod optimize;
+pub mod save_file;
 pub mod search;
 pub mod upsert;
 
@@ -21,13 +22,19 @@ use rust_mcp_sdk::{McpServer, RequestContext, tool_box};
 
 use crate::actors::project_info::ProjectInfoActor;
 use crate::mcp::optimize::OptimizeProjectInfo;
+use crate::mcp::save_file::SaveFileDescription;
 use crate::mcp::search::SearchProjectInfo;
 use crate::mcp::upsert::UpsertProjectInfo;
 
 // Generates `MemoryTools` enum with `tools()` and `TryFrom<CallToolRequestParams>`.
 tool_box!(
     MemoryTools,
-    [UpsertProjectInfo, SearchProjectInfo, OptimizeProjectInfo]
+    [
+        UpsertProjectInfo,
+        SearchProjectInfo,
+        OptimizeProjectInfo,
+        SaveFileDescription
+    ]
 );
 
 pub struct MemoryToolHandler {
@@ -67,6 +74,9 @@ impl ServerHandler for MemoryToolHandler {
         let tool = MemoryTools::try_from(params).map_err(CallToolError::new)?;
         let text = match tool {
             MemoryTools::UpsertProjectInfo(args) => upsert::execute(self.actor.clone(), args).await,
+            MemoryTools::SaveFileDescription(args) => {
+                save_file::execute(self.actor.clone(), args).await
+            }
             MemoryTools::SearchProjectInfo(args) => search::execute(self.actor.clone(), args).await,
             MemoryTools::OptimizeProjectInfo(_) => optimize::execute(self.actor.clone()).await,
         };
@@ -308,6 +318,9 @@ impl MemoryToolHandler {
         })?;
         let text = match tool {
             MemoryTools::UpsertProjectInfo(args) => upsert::execute(self.actor.clone(), args).await,
+            MemoryTools::SaveFileDescription(args) => {
+                save_file::execute(self.actor.clone(), args).await
+            }
             MemoryTools::SearchProjectInfo(args) => search::execute(self.actor.clone(), args).await,
             MemoryTools::OptimizeProjectInfo(_) => optimize::execute(self.actor.clone()).await,
         };
