@@ -5,7 +5,7 @@ pub mod upsert;
 use kameo::actor::{Actor, ActorRef};
 use lancedb::table::Table;
 
-use crate::actors::embed::EmbeddingActor;
+use crate::actors::embedding::EmbeddingActor;
 
 pub struct ProjectInfoActor {
     table: Table,

@@ -1,9 +1,14 @@
+mod request;
+mod response;
+
 use kameo::actor::{Actor, ActorRef};
 use kameo::message::{Context, Message};
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
 
 use crate::actors::EmbeddingMessage;
+use crate::actors::embedding::request::EmbeddingParams;
+use request::EmbeddingRequest;
+use response::EmbeddingResponse;
 
 pub const ENCODING_FORMAT: &str = "float";
 
@@ -30,28 +35,6 @@ impl EmbeddingActor {
     }
 }
 
-#[derive(Serialize)]
-struct EmbedParams {
-    pooling: String, // "LAST" or "MEAN"
-}
-
-#[derive(Serialize)]
-struct Req<'a> {
-    input: &'a str,
-    model: &'a str,
-    encoding_format: &'a str,
-    params: Option<EmbedParams>,
-}
-
-#[derive(Deserialize)]
-struct Data {
-    embedding: Vec<f32>,
-}
-#[derive(Deserialize)]
-struct Res {
-    data: Vec<Data>,
-}
-
 impl Actor for EmbeddingActor {
     type Args = EmbeddingActor;
 
@@ -73,11 +56,11 @@ impl Message<EmbeddingMessage> for EmbeddingActor {
         let response = self
             .http_client
             .post(&self.embeddings_url)
-            .json(&Req {
+            .json(&EmbeddingRequest {
                 input: &msg.query,
                 model: &self.model,
                 encoding_format: ENCODING_FORMAT,
-                params: self.pooling.as_ref().map(|p| EmbedParams {
+                params: self.pooling.as_ref().map(|p| EmbeddingParams {
                     pooling: p.to_string(),
                 }),
             })
@@ -85,7 +68,7 @@ impl Message<EmbeddingMessage> for EmbeddingActor {
             .await
             .map_err(|e| e.to_string())?;
 
-        let parsed: Res = response.json().await.map_err(|e| e.to_string())?;
+        let parsed: EmbeddingResponse = response.json().await.map_err(|e| e.to_string())?;
 
         if let Some(d) = parsed.data.first() {
             Ok(d.embedding.clone())

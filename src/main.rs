@@ -16,7 +16,7 @@ use rust_mcp_sdk::{
     McpServer, ServerDetails, StdioTransport, ToMcpServerHandler, TransportOptions,
 };
 
-use crate::actors::embed;
+use crate::actors::embedding;
 use crate::actors::project_info::ProjectInfoActor;
 use crate::config::Config;
 use crate::mcp::MemoryToolHandler;
@@ -44,7 +44,7 @@ async fn main() -> SdkResult<()> {
             })?,
     };
 
-    let embed_actor_ref = embed::EmbeddingActor::spawn(embed::EmbeddingActor::new(
+    let embed_actor_ref = embedding::EmbeddingActor::spawn(embedding::EmbeddingActor::new(
         Client::new(),
         config.embeddings_url,
         config.model,

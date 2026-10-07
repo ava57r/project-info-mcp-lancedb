@@ -1,4 +1,4 @@
-pub mod embed;
+pub mod embedding;
 pub mod project_info;
 
 use serde::{Deserialize, Serialize};
