@@ -1,3 +1,5 @@
+//! Response payloads returned by the embeddings HTTP endpoint.
+
 use serde::Deserialize;
 
 /// Single embedding entry in the embeddings endpoint response.

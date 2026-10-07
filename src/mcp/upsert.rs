@@ -1,3 +1,5 @@
+//! MCP tool upserting a project fact into memory.
+
 use kameo::actor::ActorRef;
 use rust_mcp_sdk::macros::{JsonSchema, mcp_tool};
 

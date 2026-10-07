@@ -1,3 +1,5 @@
+//! MCP tool saving a file description into memory.
+
 use kameo::actor::ActorRef;
 use rust_mcp_sdk::macros::{JsonSchema, mcp_tool};
 

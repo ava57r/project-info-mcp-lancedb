@@ -1,3 +1,5 @@
+//! Request payloads sent to the embeddings HTTP endpoint.
+
 use serde::Serialize;
 
 /// Provider-specific pooling options for an embedding request.

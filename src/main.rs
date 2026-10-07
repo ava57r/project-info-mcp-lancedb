@@ -1,3 +1,7 @@
+//! `piil`: MCP server exposing persistent project memory over LanceDB with hybrid search.
+//!
+//! Wires up the embeddings and project-info actors, then serves the memory tools over stdio.
+
 mod actors;
 mod config;
 mod helpers;
@@ -21,6 +25,7 @@ use crate::actors::project_info::ProjectInfoActor;
 use crate::config::Config;
 use crate::mcp::MemoryToolHandler;
 
+/// Main entry point for the `piil` MCP server.
 #[tokio::main]
 async fn main() -> SdkResult<()> {
     let config = Config::get_from_env();

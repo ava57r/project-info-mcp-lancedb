@@ -1,3 +1,5 @@
+//! Actor requesting text embeddings from an OpenAI-compatible HTTP endpoint.
+
 mod request;
 mod response;
 
@@ -10,7 +12,8 @@ use crate::actors::embedding::request::EmbeddingParams;
 use request::EmbeddingRequest;
 use response::EmbeddingResponse;
 
-pub const ENCODING_FORMAT: &str = "float";
+/// Encoding format for the embeddings request. The OpenAI-compatible endpoint expects "float" for float32 vectors.
+const ENCODING_FORMAT: &str = "float";
 
 /// Kameo actor that requests text embeddings from an OpenAI-compatible HTTP endpoint.
 pub struct EmbeddingActor {

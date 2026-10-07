@@ -1,3 +1,5 @@
+//! Arrow schema and record-batch helpers for the LanceDB table.
+
 use std::sync::Arc;
 
 use arrow_array::builder::{FixedSizeListBuilder, Float32Builder, Int64Builder, StringBuilder};

@@ -1,3 +1,5 @@
+//! Kameo actors and the messages exchanged between them.
+
 pub mod embedding;
 pub mod project_info;
 

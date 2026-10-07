@@ -1,3 +1,5 @@
+//! Actor managing project info records in the LanceDB table.
+
 pub mod optimize;
 pub mod search;
 pub mod upsert;

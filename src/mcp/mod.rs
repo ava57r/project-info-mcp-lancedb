@@ -1,3 +1,4 @@
+//! MCP server plumbing: tool registry and request dispatch.
 #![allow(clippy::enum_variant_names)]
 
 pub mod optimize;

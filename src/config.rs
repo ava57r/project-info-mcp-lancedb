@@ -1,3 +1,5 @@
+//! Runtime configuration loaded from environment variables.
+
 use std::env;
 
 /// Runtime configuration loaded from environment variables, with fallback defaults.

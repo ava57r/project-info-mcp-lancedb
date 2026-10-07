@@ -1,3 +1,5 @@
+//! Message handler inserting or replacing a project info record in LanceDB.
+
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use arrow_array::cast::AsArray;

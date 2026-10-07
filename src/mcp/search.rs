@@ -1,3 +1,5 @@
+//! MCP tool searching project memory with hybrid vector + full-text search.
+
 use kameo::actor::ActorRef;
 use rust_mcp_sdk::macros::{JsonSchema, mcp_tool};
 

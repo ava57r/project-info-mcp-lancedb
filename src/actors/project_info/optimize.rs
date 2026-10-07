@@ -1,3 +1,5 @@
+//! Message handler compacting / optimizing the LanceDB table.
+
 use kameo::message::{Context, Message};
 
 use crate::actors::OptimizeMessage;

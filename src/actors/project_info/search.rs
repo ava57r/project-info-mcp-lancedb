@@ -1,3 +1,5 @@
+//! Message handler searching project memory with hybrid vector + full-text search.
+
 use arrow_array::cast::AsArray;
 use arrow_array::{Array, Float32Array, Float64Array, RecordBatch};
 use kameo::message::{Context, Message};
