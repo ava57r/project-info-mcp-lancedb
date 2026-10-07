@@ -14,7 +14,7 @@ pub struct UpsertProjectInfo {
 }
 
 pub async fn execute(
-    actor: ActorRef<crate::actors::memory::MemoryActor>,
+    actor: ActorRef<crate::actors::project_info::ProjectInfoActor>,
     args: UpsertProjectInfo,
 ) -> String {
     let msg = crate::actors::UpsertMessage {

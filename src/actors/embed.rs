@@ -5,26 +5,26 @@ use serde::{Deserialize, Serialize};
 
 use crate::actors::EmbeddingMessage;
 
-pub const EMBED_FORMAT: &str = "float";
+pub const ENCODING_FORMAT: &str = "float";
 
 pub struct EmbeddingActor {
     http_client: Client,
-    embed_url: String,
-    model_name: String,
+    embeddings_url: String,
+    model: String,
     pooling: Option<String>, // "LAST" or "MEAN"
 }
 
 impl EmbeddingActor {
     pub fn new(
         http_client: Client,
-        embed_url: String,
-        model_name: String,
+        embeddings_url: String,
+        model: String,
         pooling: Option<String>,
     ) -> Self {
         EmbeddingActor {
             http_client,
-            embed_url,
-            model_name,
+            embeddings_url,
+            model,
             pooling,
         }
     }
@@ -72,11 +72,11 @@ impl Message<EmbeddingMessage> for EmbeddingActor {
     ) -> Self::Reply {
         let response = self
             .http_client
-            .post(&self.embed_url)
+            .post(&self.embeddings_url)
             .json(&Req {
                 input: &msg.query,
-                model: &self.model_name,
-                encoding_format: EMBED_FORMAT,
+                model: &self.model,
+                encoding_format: ENCODING_FORMAT,
                 params: self.pooling.as_ref().map(|p| EmbedParams {
                     pooling: p.to_string(),
                 }),

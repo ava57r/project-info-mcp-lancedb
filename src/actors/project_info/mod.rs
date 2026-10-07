@@ -7,19 +7,19 @@ use lancedb::table::Table;
 
 use crate::actors::embed::EmbeddingActor;
 
-pub struct MemoryActor {
+pub struct ProjectInfoActor {
     table: Table,
     embed_actor_ref: ActorRef<EmbeddingActor>,
     vector_dimension: usize,
 }
 
-impl MemoryActor {
+impl ProjectInfoActor {
     pub fn new(
         table: Table,
         embed_actor_ref: ActorRef<EmbeddingActor>,
         vector_dimension: usize,
     ) -> Self {
-        MemoryActor {
+        ProjectInfoActor {
             table,
             embed_actor_ref,
             vector_dimension,
@@ -27,8 +27,8 @@ impl MemoryActor {
     }
 }
 
-impl Actor for MemoryActor {
-    type Args = MemoryActor;
+impl Actor for ProjectInfoActor {
+    type Args = ProjectInfoActor;
 
     type Error = anyhow::Error;
 

@@ -17,7 +17,7 @@ use rust_mcp_sdk::{
 };
 
 use crate::actors::embed;
-use crate::actors::memory::MemoryActor;
+use crate::actors::project_info::ProjectInfoActor;
 use crate::config::Config;
 use crate::mcp::MemoryToolHandler;
 
@@ -46,12 +46,12 @@ async fn main() -> SdkResult<()> {
 
     let embed_actor_ref = embed::EmbeddingActor::spawn(embed::EmbeddingActor::new(
         Client::new(),
-        config.embed_url,
-        config.model_name,
+        config.embeddings_url,
+        config.model,
         None,
     ));
 
-    let memory_actor_ref = MemoryActor::spawn(MemoryActor::new(
+    let memory_actor_ref = ProjectInfoActor::spawn(ProjectInfoActor::new(
         table,
         embed_actor_ref,
         config.vector_dimension,
@@ -59,9 +59,9 @@ async fn main() -> SdkResult<()> {
 
     let server_details = ServerDetails {
         server_info: Implementation {
-            name: "project-info-mcp-lancedb".into(),
+            name: "piil".into(),
             version: env!("CARGO_PKG_VERSION").into(),
-            title: Some("Project Info MCP (LanceDB)".into()),
+            title: Some("Project Info in LanceDB MCP".into()),
             description: Some("Persistent project memory over LanceDB with hybrid search".into()),
             icons: vec![],
             website_url: None,

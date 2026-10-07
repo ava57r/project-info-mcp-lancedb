@@ -1,9 +1,9 @@
 use kameo::message::{Context, Message};
 
 use crate::actors::OptimizeMessage;
-use crate::actors::memory::MemoryActor;
+use crate::actors::project_info::ProjectInfoActor;
 
-impl Message<OptimizeMessage> for MemoryActor {
+impl Message<OptimizeMessage> for ProjectInfoActor {
     type Reply = Result<String, String>;
 
     async fn handle(

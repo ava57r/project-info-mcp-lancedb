@@ -1,5 +1,5 @@
 [package]
-name = "project-info-mcp-lancedb"
+name = "piil"
 version = "0.1.0"
 edition = "2024"
 

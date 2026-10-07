@@ -4286,6 +4286,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "piil"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "arrow-array",
+ "arrow-schema",
+ "async-trait",
+ "hex",
+ "kameo",
+ "lancedb",
+ "reqwest 0.13.5",
+ "rust-mcp-sdk",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tokio",
+ "tokio-stream",
+]
+
+[[package]]
 name = "pin-project"
 version = "1.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4375,26 +4395,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "project-info-mcp-lancedb"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "arrow-array",
- "arrow-schema",
- "async-trait",
- "hex",
- "kameo",
- "lancedb",
- "reqwest 0.13.5",
- "rust-mcp-sdk",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tokio",
- "tokio-stream",
 ]
 
 [[package]]

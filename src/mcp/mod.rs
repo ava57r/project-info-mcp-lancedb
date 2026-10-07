@@ -19,7 +19,7 @@ use rust_mcp_sdk::schema::{
 };
 use rust_mcp_sdk::{McpServer, RequestContext, tool_box};
 
-use crate::actors::memory::MemoryActor;
+use crate::actors::project_info::ProjectInfoActor;
 use crate::mcp::optimize::OptimizeProjectInfo;
 use crate::mcp::search::SearchProjectInfo;
 use crate::mcp::upsert::UpsertProjectInfo;
@@ -31,11 +31,11 @@ tool_box!(
 );
 
 pub struct MemoryToolHandler {
-    actor: ActorRef<MemoryActor>,
+    actor: ActorRef<ProjectInfoActor>,
 }
 
 impl MemoryToolHandler {
-    pub fn new(actor: ActorRef<MemoryActor>) -> Self {
+    pub fn new(actor: ActorRef<ProjectInfoActor>) -> Self {
         Self { actor }
     }
 }
@@ -219,7 +219,7 @@ impl MemoryToolHandler {
         extra.insert(
             "serverInfo".to_string(),
             serde_json::json!({
-                "name": "project-info-mcp-lancedb",
+                "name": "piil",
                 "version": env!("CARGO_PKG_VERSION"),
                 "title": "Project Info MCP (LanceDB)",
                 "description": "Persistent project memory over LanceDB with hybrid search",

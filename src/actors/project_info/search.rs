@@ -3,10 +3,10 @@ use lancedb::index::{Index, scalar::FtsIndexBuilder};
 use lancedb::query::{ExecutableQuery, QueryBase};
 use tokio_stream::StreamExt;
 
-use crate::actors::memory::MemoryActor;
+use crate::actors::project_info::ProjectInfoActor;
 use crate::actors::{EmbeddingMessage, SearchMessage};
 
-impl Message<SearchMessage> for MemoryActor {
+impl Message<SearchMessage> for ProjectInfoActor {
     type Reply = Result<String, String>;
 
     async fn handle(

@@ -1,9 +1,9 @@
 ---
-name: project-info-mcp-lancedb
+name: piil
 description: This skill provides the AI agent with a high-performance, persistent long-term memory system optimized for local code repositories, enabling lightning-fast hybrid retrieval while conserving context window tokens and local compute resources
 ---
 
-# Local Project Long-Term Memory
+# Project info in LanceDb 
 
 ## Available Tools
 

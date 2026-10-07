@@ -6,11 +6,11 @@ use lancedb::query::{ExecutableQuery, QueryBase};
 use sha2::{Digest, Sha256};
 use tokio_stream::StreamExt;
 
-use crate::actors::memory::MemoryActor;
+use crate::actors::project_info::ProjectInfoActor;
 use crate::actors::{EmbeddingMessage, UpsertMessage};
 use crate::helpers::build_arrow_record;
 
-impl Message<UpsertMessage> for MemoryActor {
+impl Message<UpsertMessage> for ProjectInfoActor {
     type Reply = Result<String, String>;
 
     async fn handle(

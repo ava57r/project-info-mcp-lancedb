@@ -1,4 +1,4 @@
-# Instructions for Using Long-Term Memory (LanceDB MCP)
+# Instructions for Using PIIL - Project info in LanceDB MCP
 
 You have access to an ultra-fast, local vector database (LanceDB) powered by Kameo actors. 
 Use it strategically to minimize context window usage and speed up inference according to the following rules:
@@ -20,4 +20,4 @@ Use it strategically to minimize context window usage and speed up inference acc
 *   **Constraint Checking:** When you need to recall architectural agreements (always apply the filter `category: "architecture"` to narrow down results).
 *   **Exact Matching:** When looking for precise function names, variables, type definitions, or specific error-handling logic.
 
-Optimize local Intel GPU resources: Do not perform repetitive upserts if you know the file or concept contents have not changed.
+Optimize local GPU resources: Do not perform repetitive upserts if you know the file or concept contents have not changed.

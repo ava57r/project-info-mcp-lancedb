@@ -14,7 +14,7 @@ pub struct SearchProjectInfo {
 }
 
 pub async fn execute(
-    actor: ActorRef<crate::actors::memory::MemoryActor>,
+    actor: ActorRef<crate::actors::project_info::ProjectInfoActor>,
     args: SearchProjectInfo,
 ) -> String {
     let msg = crate::actors::SearchMessage {
