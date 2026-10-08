@@ -2,7 +2,7 @@
 
 use std::env;
 
-use crate::helpers::DEFAULT_PROJECT;
+use crate::helpers::{DEFAULT_PROJECT, DEFAULT_COLLECTION};
 
 /// Runtime configuration loaded from environment variables, with fallback defaults.
 pub struct Config {
@@ -35,7 +35,7 @@ impl Config {
         let qdrant_api_key = env::var("QDRANT_API_KEY").ok();
 
         let collection_name =
-            env::var("QDRANT_COLLECTION").unwrap_or_else(|_| "project_memory".to_string());
+            env::var("QDRANT_COLLECTION").unwrap_or_else(|_| DEFAULT_COLLECTION.to_string());
 
         let embeddings_url = env::var("EMBEDDINGS_URL")
             .unwrap_or_else(|_| "http://localhost:8002/v1/embeddings".to_string());

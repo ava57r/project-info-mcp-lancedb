@@ -10,6 +10,9 @@ use serde_json::json;
 /// Default project name used when the caller does not specify one.
 pub const DEFAULT_PROJECT: &str = "default";
 
+/// Default Qdrant collection name.
+pub const DEFAULT_COLLECTION: &str = "project_memory";
+
 /// Builds a Qdrant `PointStruct` from a project info record with its embedding vector.
 pub fn build_point(
     id: &str,

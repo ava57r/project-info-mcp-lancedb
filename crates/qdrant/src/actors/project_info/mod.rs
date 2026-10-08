@@ -1,8 +1,12 @@
 //! Actor managing project info records in Qdrant.
 
+pub mod delete;
+pub mod list;
 pub mod optimize;
+pub mod reopen;
 pub mod search;
 pub mod stats;
+pub mod structured;
 pub mod upsert;
 
 use kameo::actor::{Actor, ActorRef};
