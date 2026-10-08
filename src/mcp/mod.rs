@@ -3,6 +3,7 @@
 
 pub mod optimize;
 pub mod save_file;
+pub mod save_function;
 pub mod search;
 pub mod stats;
 pub mod upsert;
@@ -25,6 +26,7 @@ use rust_mcp_sdk::{McpServer, RequestContext, tool_box};
 use crate::actors::project_info::ProjectInfoActor;
 use crate::mcp::optimize::OptimizeProjectInfo;
 use crate::mcp::save_file::SaveFileDescription;
+use crate::mcp::save_function::SaveFunctionDescription;
 use crate::mcp::search::SearchProjectInfo;
 use crate::mcp::stats::MemoryStats;
 use crate::mcp::upsert::UpsertProjectInfo;
@@ -37,6 +39,7 @@ tool_box!(
         SearchProjectInfo,
         OptimizeProjectInfo,
         SaveFileDescription,
+        SaveFunctionDescription,
         MemoryStats
     ]
 );
@@ -84,6 +87,9 @@ impl ServerHandler for MemoryToolHandler {
             MemoryTools::UpsertProjectInfo(args) => upsert::execute(self.actor.clone(), args).await,
             MemoryTools::SaveFileDescription(args) => {
                 save_file::execute(self.actor.clone(), args).await
+            }
+            MemoryTools::SaveFunctionDescription(args) => {
+                save_function::execute(self.actor.clone(), args).await
             }
             MemoryTools::SearchProjectInfo(args) => search::execute(self.actor.clone(), args).await,
             MemoryTools::OptimizeProjectInfo(_) => optimize::execute(self.actor.clone()).await,
@@ -335,6 +341,9 @@ impl MemoryToolHandler {
             MemoryTools::UpsertProjectInfo(args) => upsert::execute(self.actor.clone(), args).await,
             MemoryTools::SaveFileDescription(args) => {
                 save_file::execute(self.actor.clone(), args).await
+            }
+            MemoryTools::SaveFunctionDescription(args) => {
+                save_function::execute(self.actor.clone(), args).await
             }
             MemoryTools::SearchProjectInfo(args) => search::execute(self.actor.clone(), args).await,
             MemoryTools::OptimizeProjectInfo(_) => optimize::execute(self.actor.clone()).await,

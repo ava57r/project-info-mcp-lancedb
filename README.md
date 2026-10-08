@@ -85,6 +85,7 @@ Add to `opencode.json`:
 |---|---|---|
 | `upsert_project_info` | `info_id: string` (unique key, e.g. file path or task ID) <br> `content: string` (discrete fact / short text) <br> `category: string` (e.g. `architecture`, `todo`, `api`, `changelog`) <br> `project?: string` (scope; defaults to `PROJECT_NAME`) | Hashes `content` (SHA-256); skips inference if hash matches existing `(id, project)` row; otherwise embeds content via `EmbeddingActor` and `add()`s an Arrow record with current unix timestamp. |
 | `save_file_description` | `file_path: string` (relative path — unique id *within the project*) <br> `description: string` (what the file does, key functions/types) <br> `project?: string` (scope; defaults to `PROJECT_NAME`) | Upserts a `file`-category record keyed by `(file path, project)`; unchanged descriptions (SHA-256) skip embedding, re-saving the same path in the same project overwrites the previous record. |
+| `save_function_description` | `file_path`, `function_name`, `struct_name?`, `description`, `project?` — id is `file::func` or `file::struct::func` | Upserts a `function`-category record; SHA-256 dedup skips embedding when unchanged, re-saving overwrites. |
 | `hybrid_search_memory` | `query: string` <br> `limit: integer` <br> `category?: string` <br> `project?: string` (defaults to `PROJECT_NAME`; `"*"` searches all projects) | Embeds `query`, ensures an FTS index on `content`, then runs `nearest_to(vector).limit(n)` with `project = '...'` (unless `"*"`) plus optional `category = '...'` predicate. Returns each match as `[project:category] id (distance)` plus its `content` — use `category: "file"` to search file descriptions. |
 | `optimize_database` | _(none — must be called with no arguments)_ | Runs LanceDB `optimize()` / compaction on the table. |
 | `memory_stats` | `project?: string` (defaults to `PROJECT_NAME`; `"*"` aggregates all projects with a per-project breakdown) | Reports total record count, per-category breakdown, and content size (total/avg chars) via a single column-projection scan; no embedding inference. |
@@ -104,7 +105,7 @@ stdin (JSON-RPC) → StdioTransport → Server(MemoryToolHandler)
 - `src/config.rs` — `Config::get_from_env()` with defaults above.
 - `src/actors/embed.rs` — `EmbeddingActor`: `POST {input, model, encoding_format:"float"}` → `Vec<f32>`.
 - `src/actors/memory/{mod,upsert,search,optimize,stats}.rs` — LanceDB queries, hash dedup, FTS index creation.
-- `src/mcp/{mod,upsert,search,optimize,save_file,stats}.rs` — `McpTool` impls (`tools/list`, `tools/call`).
+- `src/mcp/{mod,upsert,search,optimize,save_file,save_function,stats}.rs` — `McpTool` impls (`tools/list`, `tools/call`).
 - `src/helpers.rs` — `table_schema()` + `build_arrow_record()` (validates `vector.len() == VECTOR_DIMENSION`).
 
 ## Development
