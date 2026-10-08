@@ -15,6 +15,7 @@ pub struct ProjectInfoActor {
     table: Table,
     embed_actor_ref: ActorRef<EmbeddingActor>,
     vector_dimension: usize,
+    default_project: String,
 }
 
 impl ProjectInfoActor {
@@ -23,12 +24,35 @@ impl ProjectInfoActor {
         table: Table,
         embed_actor_ref: ActorRef<EmbeddingActor>,
         vector_dimension: usize,
+        default_project: String,
     ) -> Self {
+        let default_project = normalize_project(&default_project);
         ProjectInfoActor {
             table,
             embed_actor_ref,
             vector_dimension,
+            default_project,
         }
+    }
+
+    /// Resolves the effective project scope: explicit value wins, otherwise the actor default.
+    pub fn resolve_project(&self, project: &str) -> String {
+        let trimmed = project.trim();
+        if trimmed.is_empty() {
+            self.default_project.clone()
+        } else {
+            trimmed.to_string()
+        }
+    }
+}
+
+/// Normalizes a project name, falling back to the default when blank.
+pub fn normalize_project(project: &str) -> String {
+    let trimmed = project.trim();
+    if trimmed.is_empty() {
+        crate::helpers::DEFAULT_PROJECT.to_string()
+    } else {
+        trimmed.to_string()
     }
 }
 

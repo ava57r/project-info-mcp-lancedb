@@ -13,6 +13,8 @@ pub struct SearchProjectInfo {
     pub category: Option<String>,
     /// Maximum number of results to return.
     pub limit: u64,
+    /// Project scope; defaults to the server's PROJECT_NAME. Use "*" to search all projects.
+    pub project: Option<String>,
 }
 
 /// Executes the search tool by forwarding the arguments to the project info actor.
@@ -24,6 +26,7 @@ pub async fn execute(
         query: args.query,
         category: args.category,
         limit: usize::try_from(args.limit).unwrap_or(5),
+        project: args.project.unwrap_or_default(),
     };
     match actor.ask(msg).await {
         Ok(text) => text,

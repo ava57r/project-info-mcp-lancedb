@@ -10,7 +10,7 @@ use tokio_stream::StreamExt;
 
 use crate::actors::project_info::ProjectInfoActor;
 use crate::actors::{EmbeddingMessage, UpsertMessage};
-use crate::helpers::build_arrow_record;
+use crate::helpers::{build_arrow_record, escape_literal};
 
 impl Message<UpsertMessage> for ProjectInfoActor {
     type Reply = Result<String, String>;
@@ -21,11 +21,16 @@ impl Message<UpsertMessage> for ProjectInfoActor {
         msg: UpsertMessage,
         _ctx: &mut Context<Self, Self::Reply>,
     ) -> Self::Reply {
+        let project = self.resolve_project(&msg.project);
         let mut hasher = Sha256::new();
         hasher.update(msg.content.as_bytes());
         let current_hash = hex::encode(hasher.finalize());
 
-        let predicate = format!("id = '{}'", msg.id);
+        let predicate = format!(
+            "id = {} AND project = {}",
+            escape_literal(&msg.id),
+            escape_literal(&project)
+        );
         if let Ok(mut stream) = self
             .table
             .query()
@@ -64,6 +69,7 @@ impl Message<UpsertMessage> for ProjectInfoActor {
             .as_secs() as i64;
         let record_batch = build_arrow_record(
             &msg.id,
+            &project,
             &msg.content,
             &msg.category,
             &current_hash,
@@ -76,11 +82,11 @@ impl Message<UpsertMessage> for ProjectInfoActor {
             .add(record_batch)
             .execute()
             .await
-            .map_err(|e| format!("Error writing to LanceDB: {}", e))?;
+            .map_err(|e| format!("Error writing to LanceDB: {e}"))?;
 
         Ok(format!(
-            "✅ [Kameo] Data '{}' successfully updated in project memory.",
-            msg.id
+            "✅ [Kameo] Data '{}' successfully updated in project memory (project '{}').",
+            msg.id, project
         ))
     }
 }

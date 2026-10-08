@@ -87,7 +87,7 @@ impl ServerHandler for MemoryToolHandler {
             }
             MemoryTools::SearchProjectInfo(args) => search::execute(self.actor.clone(), args).await,
             MemoryTools::OptimizeProjectInfo(_) => optimize::execute(self.actor.clone()).await,
-            MemoryTools::MemoryStats(_) => stats::execute(self.actor.clone()).await,
+            MemoryTools::MemoryStats(args) => stats::execute(self.actor.clone(), args).await,
         };
         Ok(ServerResult::from(CallToolResult::text_content(vec![
             TextContent::from(text),
@@ -338,7 +338,7 @@ impl MemoryToolHandler {
             }
             MemoryTools::SearchProjectInfo(args) => search::execute(self.actor.clone(), args).await,
             MemoryTools::OptimizeProjectInfo(_) => optimize::execute(self.actor.clone()).await,
-            MemoryTools::MemoryStats(_) => stats::execute(self.actor.clone()).await,
+            MemoryTools::MemoryStats(args) => stats::execute(self.actor.clone(), args).await,
         };
         let mut extra = serde_json::Map::new();
         extra.insert(

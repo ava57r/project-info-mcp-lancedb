@@ -6,10 +6,11 @@ Built with `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), `lancedb` for
 
 ## Features
 
-- **Persistent memory** — `project_memory` LanceDB table (`id`, `content`, `vector`, `category`, `file_hash`, `timestamp`).
-- **Hybrid search** — ANN vector search over embeddings + FTS index on `content`, with optional `category` filter.
-- **Content-aware upsert** — SHA-256 `file_hash` check skips embedding inference when content is unchanged; otherwise delete + re-insert.
-- **File catalog** — `save_file_description` stores one `file`-category record per source file; the relative file path is the unique id, so re-saving a path overwrites its previous description.
+- **Multi-project memory** — one LanceDB database serves several projects: every record carries a `project` column (`id`, `project`, `content`, `vector`, `category`, `file_hash`, `timestamp`). The active project defaults to `PROJECT_NAME` (`default`) and can be overridden per tool call via the optional `project` argument (`"*"` searches/stats across all projects).
+- **Persistent memory** — `project_memory` LanceDB table with the schema above (no migration: pre-`project`-column tables must be recreated — delete the table directory or use a fresh `LANCEDB_PATH`).
+- **Hybrid search** — ANN vector search over embeddings + FTS index on `content`, with optional `category` filter, always scoped to the active project (or `"*"` for all).
+- **Content-aware upsert** — SHA-256 `file_hash` check skips embedding inference when content is unchanged; otherwise delete + re-insert. Dedup key is `(id, project)`, so the same file path can exist in many projects.
+- **File catalog** — `save_file_description` stores one `file`-category record per source file *per project*; the `(file path, project)` pair is the unique id.
 - **Actor isolation** — `ProjectInfoActor` owns the LanceDB table; `EmbeddingActor` owns the HTTP client for the embeddings API.
 - **Zero-config defaults** — works out of the box against `http://localhost:8002/v1/embeddings`.
 
@@ -37,6 +38,7 @@ LANCEDB_PATH=./.opencode_memory/lance_db \
 EMBEDDINGS_URL=http://localhost:8002/v1/embeddings \
 EMBEDDINGS_MODEL=qwen3-embed \
 VECTOR_DIMENSION=1024 \
+PROJECT_NAME=my-project \
 ./target/release/piil
 ```
 
@@ -48,8 +50,9 @@ VECTOR_DIMENSION=1024 \
 | `EMBEDDINGS_URL` | `http://localhost:8002/v1/embeddings` | Embeddings HTTP endpoint (OpenAI-compatible). |
 | `EMBEDDINGS_MODEL` | `qwen3-embed` | Model name sent as `model` in the embedding request. |
 | `VECTOR_DIMENSION` | `1024` | Expected embedding size; upsert fails fast on mismatch. |
+| `PROJECT_NAME` | `default` | Default project scope for all records; one shared DB can hold many projects. Overridable per tool call via the optional `project` argument. |
 
-On startup the server opens the `project_memory` table, or creates it with the Arrow schema from `src/helpers.rs` if missing.
+On startup the server opens the `project_memory` table, or creates it with the Arrow schema from `src/helpers.rs` if missing. If an existing table lacks the `project` column (created by an older version), the server exits with an error — recreate the table (delete it or use a fresh `LANCEDB_PATH`) instead of migrating.
 
 ## Client setup (opencode)
 
@@ -65,7 +68,8 @@ Add to `opencode.json`:
         "LANCEDB_PATH": "./.opencode_memory/lance_db",
         "EMBEDDINGS_URL": "http://localhost:8002/v1/embeddings",
         "EMBEDDINGS_MODEL": "qwen3-embed",
-        "VECTOR_DIMENSION": "1024"
+        "VECTOR_DIMENSION": "1024",
+        "PROJECT_NAME": "my-project"
       },
       "enabled": true
     }
@@ -79,11 +83,11 @@ Add to `opencode.json`:
 
 | Tool | Arguments | What it does |
 |---|---|---|
-| `upsert_project_info` | `info_id: string` (unique key, e.g. file path or task ID) <br> `content: string` (discrete fact / short text) <br> `category: string` (e.g. `architecture`, `todo`, `api`, `changelog`) | Hashes `content` (SHA-256); skips inference if hash matches existing row; otherwise embeds content via `EmbeddingActor` and `add()`s an Arrow record with current unix timestamp. |
-| `save_file_description` | `file_path: string` (relative path — unique id) <br> `description: string` (what the file does, key functions/types) | Upserts a `file`-category record keyed by file path; unchanged descriptions (SHA-256) skip embedding, re-saving the same path overwrites the previous record. |
-| `hybrid_search_memory` | `query: string` <br> `limit: integer` <br> `category?: string` | Embeds `query`, ensures an FTS index on `content`, then runs `nearest_to(vector).limit(n)` with optional `category = '...'` predicate. Returns each match as `[category] id (distance)` plus its `content` — use `category: "file"` to search file descriptions. |
+| `upsert_project_info` | `info_id: string` (unique key, e.g. file path or task ID) <br> `content: string` (discrete fact / short text) <br> `category: string` (e.g. `architecture`, `todo`, `api`, `changelog`) <br> `project?: string` (scope; defaults to `PROJECT_NAME`) | Hashes `content` (SHA-256); skips inference if hash matches existing `(id, project)` row; otherwise embeds content via `EmbeddingActor` and `add()`s an Arrow record with current unix timestamp. |
+| `save_file_description` | `file_path: string` (relative path — unique id *within the project*) <br> `description: string` (what the file does, key functions/types) <br> `project?: string` (scope; defaults to `PROJECT_NAME`) | Upserts a `file`-category record keyed by `(file path, project)`; unchanged descriptions (SHA-256) skip embedding, re-saving the same path in the same project overwrites the previous record. |
+| `hybrid_search_memory` | `query: string` <br> `limit: integer` <br> `category?: string` <br> `project?: string` (defaults to `PROJECT_NAME`; `"*"` searches all projects) | Embeds `query`, ensures an FTS index on `content`, then runs `nearest_to(vector).limit(n)` with `project = '...'` (unless `"*"`) plus optional `category = '...'` predicate. Returns each match as `[project:category] id (distance)` plus its `content` — use `category: "file"` to search file descriptions. |
 | `optimize_database` | _(none — must be called with no arguments)_ | Runs LanceDB `optimize()` / compaction on the table. |
-| `memory_stats` | _(none — must be called with no arguments)_ | Reports total record count, per-category breakdown, and content size (total/avg chars) via a single column-projection scan; no embedding inference. |
+| `memory_stats` | `project?: string` (defaults to `PROJECT_NAME`; `"*"` aggregates all projects with a per-project breakdown) | Reports total record count, per-category breakdown, and content size (total/avg chars) via a single column-projection scan; no embedding inference. |
 
 ## Architecture
 
@@ -96,7 +100,7 @@ stdin (JSON-RPC) → StdioTransport → Server(MemoryToolHandler)
                                    └─ asks EmbeddingActor ──POST EMBEDDINGS_URL──▶ embeddings API
 ```
 
-- `src/main.rs` — stdio wiring, table open/create, actor spawn, MCP `Server::start()`.
+- `src/main.rs` — stdio wiring, table open/create (+ fail-fast check for the `project` column on old tables), actor spawn, MCP `Server::start()`.
 - `src/config.rs` — `Config::get_from_env()` with defaults above.
 - `src/actors/embed.rs` — `EmbeddingActor`: `POST {input, model, encoding_format:"float"}` → `Vec<f32>`.
 - `src/actors/memory/{mod,upsert,search,optimize,stats}.rs` — LanceDB queries, hash dedup, FTS index creation.

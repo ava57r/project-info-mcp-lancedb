@@ -60,6 +60,7 @@ async fn main() -> SdkResult<()> {
         table,
         embed_actor_ref,
         config.vector_dimension,
+        config.project,
     ));
 
     let server_details = ServerDetails {

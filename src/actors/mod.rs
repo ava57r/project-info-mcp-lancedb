@@ -14,6 +14,9 @@ pub struct UpsertMessage {
     pub content: String,
     /// Record category (for example, `file`, `todo`, `architecture`).
     pub category: String,
+    /// Project scope; empty string means the actor's default project.
+    #[serde(default)]
+    pub project: String,
 }
 
 /// Message requesting a hybrid vector + full-text search over project info.
@@ -25,6 +28,10 @@ pub struct SearchMessage {
     pub category: Option<String>,
     /// Maximum number of results to return.
     pub limit: usize,
+    /// Project scope; empty string means the actor's default project.
+    /// Use `"*"` to search across all projects.
+    #[serde(default)]
+    pub project: String,
 }
 
 /// Message requesting an embedding vector for the given query text.
@@ -40,4 +47,9 @@ pub struct OptimizeMessage {}
 
 /// Message requesting usage statistics about the project memory table.
 #[derive(Serialize, Deserialize)]
-pub struct StatsMessage {}
+pub struct StatsMessage {
+    /// Project scope; empty string means the actor's default project.
+    /// Use `"*"` to aggregate across all projects.
+    #[serde(default)]
+    pub project: String,
+}

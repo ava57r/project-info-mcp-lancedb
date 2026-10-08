@@ -2,6 +2,8 @@
 
 use std::env;
 
+use crate::helpers::DEFAULT_PROJECT;
+
 /// Runtime configuration loaded from environment variables, with fallback defaults.
 pub struct Config {
     /// Path to the LanceDB database directory (`LANCEDB_PATH`).
@@ -12,6 +14,12 @@ pub struct Config {
     pub model: String,
     /// Expected embedding vector dimension (`VECTOR_DIMENSION`).
     pub vector_dimension: usize,
+    /// Default project name used to scope records (`PROJECT_NAME`).
+    ///
+    /// Multiple projects can share one LanceDB database: every record carries
+    /// a `project` column and all reads/writes are filtered by it. The value
+    /// can be overridden per tool call via the optional `project` argument.
+    pub project: String,
 }
 
 impl Config {
@@ -30,11 +38,17 @@ impl Config {
             .and_then(|v| v.parse::<usize>().ok())
             .unwrap_or(1024);
 
+        let project = env::var("PROJECT_NAME")
+            .ok()
+            .filter(|v| !v.trim().is_empty())
+            .unwrap_or_else(|| DEFAULT_PROJECT.to_string());
+
         Config {
             db_dir,
             embeddings_url,
             model,
             vector_dimension,
+            project,
         }
     }
 }

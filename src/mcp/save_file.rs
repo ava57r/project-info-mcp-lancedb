@@ -19,6 +19,8 @@ pub struct SaveFileDescription {
     pub file_path: String,
     /// Short description of the file's content: purpose, key functions/types it defines, how it is used.
     pub description: String,
+    /// Project scope; defaults to the server's PROJECT_NAME when omitted.
+    pub project: Option<String>,
 }
 
 /// Executes the save-file tool by upserting the file description under the `file` category.
@@ -27,6 +29,7 @@ pub async fn execute(actor: ActorRef<ProjectInfoActor>, args: SaveFileDescriptio
         id: args.file_path,
         content: args.description,
         category: FILE_CATEGORY.to_string(),
+        project: args.project.unwrap_or_default(),
     };
     match actor.ask(msg).await {
         Ok(text) => text,

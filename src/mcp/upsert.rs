@@ -13,6 +13,8 @@ pub struct UpsertProjectInfo {
     pub content: String,
     /// Record category (for example, 'architecture', 'file', 'todo', 'api', 'changelog', etc.).
     pub category: String,
+    /// Project scope; defaults to the server's PROJECT_NAME when omitted.
+    pub project: Option<String>,
 }
 
 /// Executes the upsert tool by forwarding the arguments to the project info actor.
@@ -24,6 +26,7 @@ pub async fn execute(
         id: args.info_id,
         content: args.content,
         category: args.category,
+        project: args.project.unwrap_or_default(),
     };
     match actor.ask(msg).await {
         Ok(text) => text,

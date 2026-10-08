@@ -9,10 +9,12 @@ use tokio_stream::StreamExt;
 
 use crate::actors::project_info::ProjectInfoActor;
 use crate::actors::{EmbeddingMessage, SearchMessage};
+use crate::helpers::escape_literal;
 
 /// Single search hit extracted from a result batch.
 struct SearchMatch {
     id: String,
+    project: String,
     category: String,
     content: String,
     distance: Option<f32>,
@@ -27,6 +29,7 @@ impl Message<SearchMessage> for ProjectInfoActor {
         msg: SearchMessage,
         _ctx: &mut Context<Self, Self::Reply>,
     ) -> Self::Reply {
+        let project = self.resolve_project(&msg.project);
         let query_vector = self
             .embed_actor_ref
             .ask(EmbeddingMessage { query: msg.query })
@@ -45,8 +48,15 @@ impl Message<SearchMessage> for ProjectInfoActor {
             .nearest_to(query_vector)
             .map_err(|e| e.to_string())?
             .limit(msg.limit);
+        let mut filters = Vec::new();
+        if project != "*" {
+            filters.push(format!("project = {}", escape_literal(&project)));
+        }
         if let Some(cat) = msg.category {
-            query_builder = query_builder.only_if(format!("category = '{}'", cat));
+            filters.push(format!("category = {}", escape_literal(&cat)));
+        }
+        if !filters.is_empty() {
+            query_builder = query_builder.only_if(filters.join(" AND "));
         }
 
         let mut stream = query_builder
@@ -64,11 +74,12 @@ impl Message<SearchMessage> for ProjectInfoActor {
     }
 }
 
-/// Copies readable columns (`id`, `category`, `content`, `_distance`) out of a batch.
+/// Copies readable columns (`id`, `project`, `category`, `content`, `_distance`) out of a batch.
 fn collect_matches(batch: &RecordBatch, found: &mut Vec<SearchMatch>) {
     for row in 0..batch.num_rows() {
         found.push(SearchMatch {
             id: string_value(batch, "id", row).unwrap_or_default(),
+            project: string_value(batch, "project", row).unwrap_or_default(),
             category: string_value(batch, "category", row).unwrap_or_default(),
             content: string_value(batch, "content", row).unwrap_or_default(),
             distance: distance_value(batch, row),
@@ -112,8 +123,9 @@ fn format_matches(found: &[SearchMatch]) -> String {
             .map(|d| format!(" (distance: {d:.4})"))
             .unwrap_or_default();
         out.push_str(&format!(
-            "{}. [{}] {}{}\n   {}\n",
+            "{}. [{}:{}] {}{}\n   {}\n",
             i + 1,
+            m.project,
             m.category,
             m.id,
             distance,
@@ -135,6 +147,7 @@ mod tests {
     fn file_batch() -> RecordBatch {
         let schema = Arc::new(Schema::new(vec![
             Field::new("id", DataType::Utf8, false),
+            Field::new("project", DataType::Utf8, false),
             Field::new("category", DataType::Utf8, false),
             Field::new("content", DataType::Utf8, false),
             Field::new("_distance", DataType::Float32, true),
@@ -143,6 +156,7 @@ mod tests {
             schema,
             vec![
                 Arc::new(StringArray::from(vec!["src/auth.rs", "src/main.rs"])),
+                Arc::new(StringArray::from(vec!["my-proj", "my-proj"])),
                 Arc::new(StringArray::from(vec!["file", "file"])),
                 Arc::new(StringArray::from(vec![
                     "JWT validation helpers",
@@ -161,6 +175,7 @@ mod tests {
 
         assert_eq!(found.len(), 2);
         assert_eq!(found[0].id, "src/auth.rs");
+        assert_eq!(found[0].project, "my-proj");
         assert_eq!(found[0].category, "file");
         assert_eq!(found[0].content, "JWT validation helpers");
         assert_eq!(found[0].distance, Some(0.125));
@@ -171,6 +186,7 @@ mod tests {
     fn tolerates_missing_distance_column() {
         let schema = Arc::new(Schema::new(vec![
             Field::new("id", DataType::Utf8, false),
+            Field::new("project", DataType::Utf8, false),
             Field::new("category", DataType::Utf8, false),
             Field::new("content", DataType::Utf8, false),
         ]));
@@ -178,6 +194,7 @@ mod tests {
             schema,
             vec![
                 Arc::new(StringArray::from(vec!["jwt_validation_logic"])),
+                Arc::new(StringArray::from(vec!["my-proj"])),
                 Arc::new(StringArray::from(vec!["todo"])),
                 Arc::new(StringArray::from(vec!["Fix flaky expiry test"])),
             ],
@@ -189,6 +206,7 @@ mod tests {
 
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].id, "jwt_validation_logic");
+        assert_eq!(found[0].project, "my-proj");
         assert_eq!(found[0].distance, None);
     }
 
@@ -201,8 +219,8 @@ mod tests {
         let text = format_matches(&found);
 
         assert!(text.contains("Found 2 match(es)"));
-        assert!(text.contains("1. [file] src/auth.rs (distance: 0.1250)"));
+        assert!(text.contains("1. [my-proj:file] src/auth.rs (distance: 0.1250)"));
         assert!(text.contains("JWT validation helpers"));
-        assert!(text.contains("2. [file] src/main.rs (distance: 0.5000)"));
+        assert!(text.contains("2. [my-proj:file] src/main.rs (distance: 0.5000)"));
     }
 }
