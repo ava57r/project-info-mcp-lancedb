@@ -20,6 +20,11 @@ pub struct Config {
     /// a `project` column and all reads/writes are filtered by it. The value
     /// can be overridden per tool call via the optional `project` argument.
     pub project: String,
+    /// HTTP port for the REST API + dashboard (`HTTP_PORT`, default `6333` Qdrant-style).
+    /// Set to `0` or empty to disable the HTTP server (stdio MCP only).
+    pub http_port: u16,
+    /// Directory where `.tar.gz` DB snapshots are stored (`SNAPSHOT_DIR`).
+    pub snapshot_dir: String,
 }
 
 impl Config {
@@ -49,6 +54,15 @@ impl Config {
             model,
             vector_dimension,
             project,
+            http_port: env::var("HTTP_PORT")
+                .ok()
+                .filter(|v| !v.trim().is_empty())
+                .and_then(|v| v.parse::<u16>().ok())
+                .unwrap_or(6333),
+            snapshot_dir: env::var("SNAPSHOT_DIR")
+                .ok()
+                .filter(|v| !v.trim().is_empty())
+                .unwrap_or_else(|| "./.opencode_memory/snapshots".to_string()),
         }
     }
 }

@@ -1,0 +1,146 @@
+body {
+    margin: 0;
+    background: #0f1419;
+    color: #e6edf3;
+    font:
+        14px/1.5 system-ui,
+        sans-serif;
+}
+header {
+    display: flex;
+    gap: 12px;
+    padding: 12px 20px;
+    background: #1a2230;
+    border-bottom: 1px solid #30363d;
+    align-items: center;
+}
+main {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 16px;
+    padding: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+.card {
+    background: #1a2230;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 16px;
+}
+.card h2 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    color: #6cb6ff;
+}
+.stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px dashed #30363d;
+}
+.tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+.tabs button {
+    background: #21262d;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+.tabs button.active {
+    background: #6cb6ff;
+    color: #000;
+}
+input,
+textarea {
+    background: #0d1117;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 7px 10px;
+    width: 100%;
+}
+button.primary {
+    background: #6cb6ff;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-weight: 600;
+}
+button.danger {
+    background: #f85149;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+button.ghost {
+    background: transparent;
+    color: #6cb6ff;
+    border: 1px solid #6cb6ff;
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+.row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.row > * {
+    flex: 1;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+th,
+td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid #30363d;
+}
+td.content {
+    max-width: 420px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pill {
+    font-size: 11px;
+    background: #21262d;
+    border-radius: 8px;
+    padding: 1px 8px;
+    margin-right: 4px;
+}
+pre {
+    background: #0d1117;
+    padding: 10px;
+    border-radius: 6px;
+    overflow: auto;
+    font-size: 12px;
+}
+.hidden {
+    display: none;
+}
+.muted {
+    color: #8b949e;
+}
+.badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #0d4429;
+    color: #3fb950;
+}

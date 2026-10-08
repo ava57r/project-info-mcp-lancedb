@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>PIIL Dashboard</title>
+        <link rel="stylesheet" href="/static/style.css" />
+    </head>
+    <body>
+        <header>
+            <h1 style="font-size: 18px; margin: 0">PIIL Dashboard</h1>
+            <span class="badge" id="health">...</span> <span class="muted" id="ver" style="margin-left: auto"></span>
+        </header>
+        <main>
+            <div>
+                <div class="card">
+                    <h2>Collection</h2>
+                    <div id="collStats"><span class="muted">loading...</span></div>
+                    <div class="row" style="margin-top: 8px">
+                        <button class="ghost" onclick="optimize()">Optimize</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Projects</h2>
+                    <div id="projects"><span class="muted">loading...</span></div>
+                </div>
+                <div class="card">
+                    <h2>Categories</h2>
+                    <div id="cats"><span class="muted">loading...</span></div>
+                </div>
+                <div class="card">
+                    <h2>Project scope</h2>
+                    <div class="row"><input id="project" value="default" oninput="refreshAll()" /></div>
+                    <div class="muted">Use * for all projects.</div>
+                </div>
+            </div>
+            <div>
+                <div class="tabs">
+                    <button class="active" onclick="tab('browse',this)">Points</button>
+                    <button onclick="tab('search',this)">Search</button>
+                    <button onclick="tab('add',this)">Upsert</button>
+                    <button onclick="tab('snaps',this)">Snapshots</button>
+                </div>
+                <div class="card" id="pane-browse">
+                    <h2>Points</h2>
+                    <div class="row">
+                        <input id="fq" placeholder="filter..." oninput="loadPoints()" />
+                        <input id="fcat" placeholder="category..." style="max-width: 160px" oninput="loadPoints()" />
+                    </div>
+                    <div id="points"><span class="muted">loading...</span></div>
+                    <div class="row" style="margin-top: 8px">
+                        <button class="ghost" onclick="page(-1)">Prev</button>
+                        <span class="muted" id="pageInfo" style="text-align: center"></span>
+                        <button class="ghost" onclick="page(1)">Next</button>
+                    </div>
+                </div>
+                <div class="card hidden" id="pane-search">
+                    <h2>Hybrid search</h2>
+                    <div class="row">
+                        <input id="sq" placeholder="query..." /><input
+                            id="scat"
+                            placeholder="category"
+                            style="max-width: 180px"
+                        />
+                    </div>
+                    <div class="row"><button class="primary" onclick="doSearch()">Search</button></div>
+                    <div id="hits"><span class="muted">results appear here</span></div>
+                </div>
+                <div class="card hidden" id="pane-add">
+                    <h2>Upsert point</h2>
+                    <div class="row"><input id="uid" placeholder="id" /></div>
+                    <div class="row"><input id="ucat" placeholder="category" value="architecture" /></div>
+                    <div class="row"><textarea id="ucontent" rows="4" placeholder="content..."></textarea></div>
+                    <div class="row"><button class="primary" onclick="doUpsert()">Upsert</button></div>
+                    <pre id="upsertOut" class="hidden"></pre>
+                </div>
+                <div class="card hidden" id="pane-snaps">
+                    <h2>Snapshots and backups</h2>
+                    <div class="row">
+                        <button class="primary" onclick="mkSnap()">Create snapshot</button>
+                        <button class="ghost" onclick="loadSnaps()">Refresh</button>
+                    </div>
+                    <div id="snaps"><span class="muted">loading...</span></div>
+                </div>
+            </div>
+        </main>
+        <script src="/static/app.js"></script>
+    </body>
+</html>

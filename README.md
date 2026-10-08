@@ -51,8 +51,32 @@ PROJECT_NAME=my-project \
 | `EMBEDDINGS_MODEL` | `qwen3-embed` | Model name sent as `model` in the embedding request. |
 | `VECTOR_DIMENSION` | `1024` | Expected embedding size; upsert fails fast on mismatch. |
 | `PROJECT_NAME` | `default` | Default project scope for all records; one shared DB can hold many projects. Overridable per tool call via the optional `project` argument. |
+| `HTTP_PORT` | `6333` | Port for the REST API + dashboard (Qdrant-style). Set to `0` or empty to disable HTTP (stdio MCP only). |
+| `SNAPSHOT_DIR` | `./.opencode_memory/snapshots` | Directory where `.tar.gz` DB snapshots are stored. |
 
 On startup the server opens the `project_memory` table, or creates it with the Arrow schema from `src/helpers.rs` if missing. If an existing table lacks the `project` column (created by an older version), the server exits with an error — recreate the table (delete it or use a fresh `LANCEDB_PATH`) instead of migrating.
+
+## Dashboard & REST API (Qdrant-style)
+
+Alongside MCP stdio, the server exposes an HTTP API + dashboard on `:HTTP_PORT` (default `6333`):
+
+- Dashboard: `http://localhost:6333/dashboard` — collection overview, per-project/category stats, point browser (filter + pagination + delete), hybrid search, upsert form, snapshot manager. Page markup, stylesheet, and client script live in `src/http/static/` (`dashboard.html`, `style.css`, `app.js`), baked into the binary via `include_str!` and served at `/dashboard`, `/static/style.css`, `/static/app.js`.
+- `GET /healthz`, `GET /readyz`, `GET /api/version`
+- `GET /api/collections`, `GET /api/collections/stats?project=...`
+- `GET /api/points?project=&category=&query=&limit=&offset=`
+- `POST /api/points/upsert` `{"id","content","category","project?"}` (embeds like the MCP tool)
+- `POST /api/points/search` `{"query","category?","limit?","project?"}`
+- `DELETE /api/points/:id?project=...`
+- `POST /api/optimize`
+- Snapshots (`.tar.gz` of the whole `LANCEDB_PATH` dir):
+  `GET /api/snapshots`, `POST /api/snapshots`, `POST /api/snapshots/:name/restore`, `DELETE /api/snapshots/:name`, `GET /api/snapshots/:name/download`.
+  Restore wipes the DB dir, extracts the archive, and re-opens the actor's table handle.
+
+```bash
+curl localhost:6333/healthz
+curl -X POST localhost:6333/api/snapshots
+curl 'localhost:6333/api/collections/stats?project=*'
+```
 
 ## Client setup (opencode)
 
