@@ -26,7 +26,7 @@ Or connect to an existing remote server.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `QDRANT_URL` | Yes | `http://localhost:6333` | Qdrant server URL. |
+| `QDRANT_URL` | Yes | `http://localhost:6334` | Qdrant server URL. |
 | `QDRANT_API_KEY` | No | — | API key for authentication. |
 | `QDRANT_COLLECTION` | No | `project_memory` | Name of the Qdrant collection. |
 | `EMBEDDINGS_URL` | Yes | `http://localhost:8002/v1/embeddings` | Embeddings API URL (OpenAI-compatible). |
@@ -37,7 +37,7 @@ Or connect to an existing remote server.
 Example:
 
 ```bash
-export QDRANT_URL="http://localhost:6333"
+export QDRANT_URL="http://localhost:6334"
 export EMBEDDINGS_URL="http://localhost:8002/v1/embeddings"
 export EMBEDDINGS_MODEL="qwen3-embed"
 export VECTOR_DIMENSION=1024
@@ -73,13 +73,57 @@ Add to `opencode.json`:
       "type": "local",
       "command": ["/full/path/to/target/release/piil-qdrant"],
       "environment": {
-        "QDRANT_URL": "http://localhost:6333",
+        "QDRANT_URL": "http://localhost:6334",
         "EMBEDDINGS_URL": "http://localhost:8002/v1/embeddings",
         "EMBEDDINGS_MODEL": "qwen3-embed",
         "VECTOR_DIMENSION": "1024",
         "PROJECT_NAME": "my-project"
       },
       "enabled": true
+    }
+  }
+}
+```
+
+> Use an absolute `command` path. Ensure Qdrant is running at `QDRANT_URL` and `VECTOR_DIMENSION` matches your embedding model. Optional: set `QDRANT_API_KEY` and `QDRANT_COLLECTION` if using authentication or a custom collection name.
+
+## Client setup (Zed)
+
+Add to `~/.config/zed/settings.json`:
+
+```json
+{
+  "mcp": {
+    "piil-qdrant": {
+      "command": "/full/path/to/target/release/piil-qdrant",
+      "args": [],
+      "env": {
+        "QDRANT_URL": "http://localhost:6334",
+        "EMBEDDINGS_URL": "http://localhost:8002/v1/embeddings",
+        "EMBEDDINGS_MODEL": "qwen3-embed",
+        "VECTOR_DIMENSION": "1024",
+        "PROJECT_NAME": "my-project"
+      }
+    }
+  }
+}
+```
+
+Or via `~/.config/zed/mcp.json`:
+
+```json
+{
+  "mcp": {
+    "piil-qdrant": {
+      "command": "/full/path/to/target/release/piil-qdrant",
+      "args": [],
+      "env": {
+        "QDRANT_URL": "http://localhost:6334",
+        "EMBEDDINGS_URL": "http://localhost:8002/v1/embeddings",
+        "EMBEDDINGS_MODEL": "qwen3-embed",
+        "VECTOR_DIMENSION": "1024",
+        "PROJECT_NAME": "my-project"
+      }
     }
   }
 }

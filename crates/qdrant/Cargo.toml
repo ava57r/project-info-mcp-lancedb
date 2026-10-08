@@ -10,7 +10,7 @@ async-trait = "0.1"
 hex = "0.4"
 kameo = "0.22"
 uuid = { version = "1.27", features = ["v4"] }
-qdrant-client = "1.13"
+qdrant-client = "1.19"
 rust-mcp-sdk = { version = "2.0", features = ["stdio", "server"] }
 reqwest = { version = "0.13", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
