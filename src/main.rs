@@ -5,6 +5,7 @@
 mod actors;
 mod config;
 mod helpers;
+mod http;
 mod mcp;
 
 use std::collections::BTreeMap;
@@ -51,8 +52,8 @@ async fn main() -> SdkResult<()> {
 
     let embed_actor_ref = embedding::EmbeddingActor::spawn(embedding::EmbeddingActor::new(
         Client::new(),
-        config.embeddings_url,
-        config.model,
+        config.embeddings_url.clone(),
+        config.model.clone(),
         None,
     ));
 
@@ -60,8 +61,37 @@ async fn main() -> SdkResult<()> {
         table,
         embed_actor_ref,
         config.vector_dimension,
-        config.project,
+        config.project.clone(),
+        config.db_dir.clone(),
     ));
+
+    // Qdrant-style HTTP API + dashboard on :HTTP_PORT (runs alongside MCP stdio).
+    if config.http_port != 0 {
+        let state = http::AppState {
+            actor: memory_actor_ref.clone(),
+            db_dir: config.db_dir.clone(),
+            snapshot_dir: config.snapshot_dir.clone(),
+            default_project: config.project.clone(),
+            model: config.model.clone(),
+            vector_dimension: config.vector_dimension,
+            started_unix: chrono::Utc::now().timestamp(),
+        };
+        let _ = http::snapshots::ensure_dir(&config.snapshot_dir);
+        let app = http::router(state);
+        let port = config.http_port;
+        tokio::spawn(async move {
+            let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await;
+            match listener {
+                Ok(l) => {
+                    eprintln!("PIIL dashboard: http://localhost:{port}/dashboard");
+                    if let Err(e) = axum::serve(l, app).await {
+                        eprintln!("HTTP server error: {e}");
+                    }
+                }
+                Err(e) => eprintln!("HTTP server bind error on port {port}: {e}"),
+            }
+        });
+    }
 
     let server_details = ServerDetails {
         server_info: Implementation {

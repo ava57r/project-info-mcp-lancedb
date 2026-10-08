@@ -1,8 +1,12 @@
 //! Actor managing project info records in the LanceDB table.
 
+pub mod delete;
+pub mod list;
 pub mod optimize;
+pub mod reopen;
 pub mod search;
 pub mod stats;
+pub mod structured;
 pub mod upsert;
 
 use kameo::actor::{Actor, ActorRef};
@@ -16,6 +20,7 @@ pub struct ProjectInfoActor {
     embed_actor_ref: ActorRef<EmbeddingActor>,
     vector_dimension: usize,
     default_project: String,
+    db_dir: String,
 }
 
 impl ProjectInfoActor {
@@ -25,6 +30,7 @@ impl ProjectInfoActor {
         embed_actor_ref: ActorRef<EmbeddingActor>,
         vector_dimension: usize,
         default_project: String,
+        db_dir: String,
     ) -> Self {
         let default_project = normalize_project(&default_project);
         ProjectInfoActor {
@@ -32,6 +38,7 @@ impl ProjectInfoActor {
             embed_actor_ref,
             vector_dimension,
             default_project,
+            db_dir,
         }
     }
 
