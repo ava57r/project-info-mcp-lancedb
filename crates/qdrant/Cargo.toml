@@ -1,19 +1,16 @@
 [package]
-name = "piil"
-version = "0.1.0"
+name = "piil-qdrant"
+version = "0.2.0"
 edition = "2024"
 
-[workspace]
-members = ["crates/qdrant"]
 
 [dependencies]
 anyhow = "1.0"
-arrow-array = "58"
-arrow-schema = "58"
 async-trait = "0.1"
 hex = "0.4"
 kameo = "0.22"
-lancedb = { version = "0.39", features = ["remote"] }
+uuid = { version = "1.27", features = ["v4"] }
+qdrant-client = "1.19"
 rust-mcp-sdk = { version = "2.0", features = ["stdio", "server"] }
 reqwest = { version = "0.13", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -21,8 +18,3 @@ serde_json = "1.0"
 sha2 = "0.11"
 tokio = { version = "1.38", features = ["full"] }
 tokio-stream = "0.1"
-axum = "0.8.9"
-tower-http = { version = "0.6", features = ["cors"] }
-chrono = { version = "0.4.45", features = ["serde"] }
-tar = "0.4.46"
-flate2 = "1.1.10"
