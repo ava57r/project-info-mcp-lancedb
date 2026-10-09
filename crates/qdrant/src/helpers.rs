@@ -79,15 +79,11 @@ pub async fn ensure_collection(
         let mut vectors_config = VectorsConfigBuilder::default();
         vectors_config.add_named_vector_params(
             vector_name,
-            VectorParamsBuilder::new(
-                dimension as u64,
-                qdrant_client::qdrant::Distance::Cosine,
-            ),
+            VectorParamsBuilder::new(dimension as u64, qdrant_client::qdrant::Distance::Cosine),
         );
         client
             .create_collection(
-                CreateCollectionBuilder::new(collection_name)
-                    .vectors_config(vectors_config),
+                CreateCollectionBuilder::new(collection_name).vectors_config(vectors_config),
             )
             .await?;
 

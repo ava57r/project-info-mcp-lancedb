@@ -1,4 +1,4 @@
-//! `piil`: MCP server exposing persistent project memory over Qdrant with vector search.
+//! `piim`: MCP server exposing persistent project memory over Qdrant with vector search.
 //!
 //! Wires up the embeddings and project-info actors, then serves the memory tools over stdio.
 
@@ -25,7 +25,7 @@ use crate::config::Config;
 use crate::helpers::ensure_collection;
 use crate::mcp::MemoryToolHandler;
 
-/// Main entry point for the `piil` MCP server.
+/// Main entry point for the `piim` MCP server.
 #[tokio::main]
 async fn main() -> SdkResult<()> {
     let config = Config::get_from_env();
@@ -43,11 +43,16 @@ async fn main() -> SdkResult<()> {
             })?;
 
     // Ensure the collection exists with proper vector config
-    ensure_collection(&client, &config.collection_name, &config.model, config.vector_dimension)
-        .await
-        .map_err(|e| rust_mcp_sdk::error::McpSdkError::Internal {
-            description: e.to_string(),
-        })?;
+    ensure_collection(
+        &client,
+        &config.collection_name,
+        &config.model,
+        config.vector_dimension,
+    )
+    .await
+    .map_err(|e| rust_mcp_sdk::error::McpSdkError::Internal {
+        description: e.to_string(),
+    })?;
 
     let embed_actor_ref = embedding::EmbeddingActor::spawn(embedding::EmbeddingActor::new(
         Client::new(),
@@ -66,9 +71,9 @@ async fn main() -> SdkResult<()> {
 
     let server_details = ServerDetails {
         server_info: Implementation {
-            name: "piil".into(),
+            name: "piim".into(),
             version: env!("CARGO_PKG_VERSION").into(),
-            title: Some("Project Info in Qdrant MCP".into()),
+            title: Some("Project Info in MCP".into()),
             description: Some("Persistent project memory over Qdrant with vector search".into()),
             icons: vec![],
             website_url: None,

@@ -1,9 +1,9 @@
 ---
-name: piil
+name: piim
 description: This skill provides the AI agent with a high-performance, persistent long-term memory system optimized for local code repositories, enabling lightning-fast hybrid retrieval while conserving context window tokens and local compute resources
 ---
 
-# Project info in LanceDb 
+# Project Info in MCP 
 
 ## Available Tools
 

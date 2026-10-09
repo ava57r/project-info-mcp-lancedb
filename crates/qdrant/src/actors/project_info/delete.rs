@@ -1,10 +1,10 @@
 //! Message handler deleting a single point by `(id, project)`.
 
 use kameo::message::{Context, Message};
-use qdrant_client::qdrant::{Condition, Filter, ScrollPointsBuilder, DeletePointsBuilder};
+use qdrant_client::qdrant::{Condition, DeletePointsBuilder, Filter, ScrollPointsBuilder};
 
-use crate::actors::project_info::ProjectInfoActor;
 use crate::actors::DeletePointMessage;
+use crate::actors::project_info::ProjectInfoActor;
 
 impl Message<DeletePointMessage> for ProjectInfoActor {
     type Reply = Result<bool, String>;
@@ -51,7 +51,9 @@ impl Message<DeletePointMessage> for ProjectInfoActor {
 
         // Delete the point by ID
         self.client
-            .delete_points(DeletePointsBuilder::new(&self.collection_name).points(vec![point_id.clone()]))
+            .delete_points(
+                DeletePointsBuilder::new(&self.collection_name).points(vec![point_id.clone()]),
+            )
             .await
             .map_err(|e| format!("Error deleting point: {e}"))?;
 

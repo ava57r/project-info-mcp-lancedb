@@ -68,7 +68,7 @@ pub async fn readyz(State(state): State<AppState>) -> impl IntoResponse {
 /// Version info.
 pub async fn version(State(state): State<AppState>) -> Json<serde_json::Value> {
     Json(serde_json::json!({
-        "app": "piil",
+        "app": "piim",
         "version": env!("CARGO_PKG_VERSION"),
         "model": state.model,
         "vector_dimension": state.vector_dimension,

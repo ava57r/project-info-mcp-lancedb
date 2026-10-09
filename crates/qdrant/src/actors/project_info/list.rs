@@ -28,8 +28,7 @@ impl Message<ListPointsMessage> for ProjectInfoActor {
                 conditions.push(Condition::matches("category", cat.clone()));
             }
         }
-        let filter = (!conditions.is_empty())
-            .then(|| Filter::must(conditions));
+        let filter = (!conditions.is_empty()).then(|| Filter::must(conditions));
 
         // Count total matching points
         let total = if let Some(ref f) = filter {

@@ -1,4 +1,4 @@
-//! `piil`: MCP server exposing persistent project memory over LanceDB with hybrid search.
+//! `piim`: MCP server exposing persistent project memory over LanceDB with hybrid search.
 //!
 //! Wires up the embeddings and project-info actors, then serves the memory tools over stdio.
 
@@ -26,7 +26,7 @@ use crate::actors::project_info::ProjectInfoActor;
 use crate::config::Config;
 use crate::mcp::MemoryToolHandler;
 
-/// Main entry point for the `piil` MCP server.
+/// Main entry point for the `piim` MCP server.
 #[tokio::main]
 async fn main() -> SdkResult<()> {
     let config = Config::get_from_env();
@@ -83,7 +83,7 @@ async fn main() -> SdkResult<()> {
             let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await;
             match listener {
                 Ok(l) => {
-                    eprintln!("PIIL dashboard: http://localhost:{port}/dashboard");
+                    eprintln!("PIIM dashboard: http://localhost:{port}/dashboard");
                     if let Err(e) = axum::serve(l, app).await {
                         eprintln!("HTTP server error: {e}");
                     }
@@ -95,9 +95,9 @@ async fn main() -> SdkResult<()> {
 
     let server_details = ServerDetails {
         server_info: Implementation {
-            name: "piil".into(),
+            name: "piim".into(),
             version: env!("CARGO_PKG_VERSION").into(),
-            title: Some("Project Info in LanceDB MCP".into()),
+            title: Some("Project Info in MCP".into()),
             description: Some("Persistent project memory over LanceDB with hybrid search".into()),
             icons: vec![],
             website_url: None,

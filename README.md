@@ -1,4 +1,4 @@
-# PIIL (Project Info In LanceDB MCP)
+# PIIM (Project Info In MCP)
 
 A persistent project-memory MCP server in Rust. Stores discrete facts (architecture notes, TODOs, API contracts, changelogs) in [LanceDB](https://lancedb.com) with vector + full-text hybrid search, exposed to AI agents via the [Model Context Protocol](https://modelcontextprotocol.io) over stdio.
 
@@ -28,7 +28,7 @@ Built with `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), `lancedb` for
 
 ```bash
 cargo build --release
-./target/release/piil
+./target/release/piim
 ```
 
 With custom config:
@@ -39,7 +39,7 @@ EMBEDDINGS_URL=http://localhost:8002/v1/embeddings \
 EMBEDDINGS_MODEL=qwen3-embed \
 VECTOR_DIMENSION=1024 \
 PROJECT_NAME=my-project \
-./target/release/piil
+./target/release/piim
 ```
 
 ## Configuration
@@ -85,9 +85,9 @@ Add to `opencode.json`:
 ```json
 {
   "mcp": {
-    "piil": {
+    "piim": {
       "type": "local",
-      "command": ["/full/path/to/target/release/piil"],
+      "command": ["/full/path/to/target/release/piim"],
       "environment": {
         "LANCEDB_PATH": "./.opencode_memory/lance_db",
         "EMBEDDINGS_URL": "http://localhost:8002/v1/embeddings",

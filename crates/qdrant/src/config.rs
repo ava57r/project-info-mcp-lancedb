@@ -2,7 +2,7 @@
 
 use std::env;
 
-use crate::helpers::{DEFAULT_PROJECT, DEFAULT_COLLECTION};
+use crate::helpers::{DEFAULT_COLLECTION, DEFAULT_PROJECT};
 
 /// Runtime configuration loaded from environment variables, with fallback defaults.
 pub struct Config {

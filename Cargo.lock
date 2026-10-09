@@ -4307,7 +4307,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "piil"
+name = "piim"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -4332,7 +4332,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "piil-qdrant"
+name = "piim-qdrant"
 version = "0.2.0"
 dependencies = [
  "anyhow",

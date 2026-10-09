@@ -82,9 +82,7 @@ impl Message<StatsStructuredMessage> for ProjectInfoActor {
                         let payload = &point.payload;
 
                         if let Some(category) = payload.get("category").and_then(|v| v.as_str()) {
-                            *per_category
-                                .entry(category.to_string())
-                                .or_insert(0) += 1;
+                            *per_category.entry(category.to_string()).or_insert(0) += 1;
                         }
 
                         if let Some(content) = payload.get("content").and_then(|v| v.as_str()) {
@@ -93,9 +91,7 @@ impl Message<StatsStructuredMessage> for ProjectInfoActor {
 
                         if all_projects {
                             if let Some(proj) = payload.get("project").and_then(|v| v.as_str()) {
-                                *per_project
-                                    .entry(proj.to_string())
-                                    .or_insert(0) += 1;
+                                *per_project.entry(proj.to_string()).or_insert(0) += 1;
                             }
                         }
                     }
@@ -152,12 +148,8 @@ impl Message<StructuredSearchMessage> for ProjectInfoActor {
 
         // Build search request
         let mut search_request =
-            SearchPointsBuilder::new(
-                self.collection_name.clone(),
-                query_vector,
-                msg.limit as u64,
-            )
-            .vector_name(&self.vector_name);
+            SearchPointsBuilder::new(self.collection_name.clone(), query_vector, msg.limit as u64)
+                .vector_name(&self.vector_name);
 
         if let Some(f) = filter {
             search_request = search_request.filter(f);

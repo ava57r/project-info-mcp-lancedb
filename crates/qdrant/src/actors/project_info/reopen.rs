@@ -4,8 +4,8 @@
 
 use kameo::message::{Context, Message};
 
-use crate::actors::project_info::ProjectInfoActor;
 use crate::actors::ReopenMessage;
+use crate::actors::project_info::ProjectInfoActor;
 use crate::{config::Config, helpers::ensure_collection};
 
 impl Message<ReopenMessage> for ProjectInfoActor {

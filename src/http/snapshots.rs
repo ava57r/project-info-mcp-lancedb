@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn round_trips_snapshot() {
-        let base = std::env::temp_dir().join(format!("piil-snap-{}", std::process::id()));
+        let base = std::env::temp_dir().join(format!("piim-snap-{}", std::process::id()));
         let db = base.join("db");
         let snaps = base.join("snaps");
         fs::create_dir_all(&db).expect("db dir");

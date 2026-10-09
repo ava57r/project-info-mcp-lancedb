@@ -250,9 +250,9 @@ impl MemoryToolHandler {
         extra.insert(
             "serverInfo".to_string(),
             serde_json::json!({
-                "name": "piil",
+                "name": "piim",
                 "version": env!("CARGO_PKG_VERSION"),
-                "title": "Project Info MCP (LanceDB)",
+                "title": "Project Info in MCP",
                 "description": "Persistent project memory over LanceDB with hybrid search",
             }),
         );

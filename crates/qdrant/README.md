@@ -1,4 +1,4 @@
-# piil-qdrant
+# piim-qdrant
 
 MCP server for storing and searching project information in Qdrant with vector search.
 
@@ -47,13 +47,13 @@ export PROJECT_NAME="my-project"
 ### 3. Build
 
 ```bash
-cargo build --release -p piil-qdrant
+cargo build --release -p piim-qdrant
 ```
 
 ### 4. Run
 
 ```bash
-cargo run -p piil-qdrant
+cargo run -p piim-qdrant
 ```
 
 The server connects to Qdrant, creates the collection if it doesn't exist, and starts listening via **stdio**.
@@ -69,9 +69,9 @@ Add to `opencode.json`:
 ```json
 {
   "mcp": {
-    "piil-qdrant": {
+    "piim-qdrant": {
       "type": "local",
-      "command": ["/full/path/to/target/release/piil-qdrant"],
+      "command": ["/full/path/to/target/release/piim-qdrant"],
       "environment": {
         "QDRANT_URL": "http://localhost:6334",
         "EMBEDDINGS_URL": "http://localhost:8002/v1/embeddings",
@@ -94,8 +94,8 @@ Add to `~/.config/zed/settings.json`:
 ```json
 {
   "mcp": {
-    "piil-qdrant": {
-      "command": "/full/path/to/target/release/piil-qdrant",
+    "piim-qdrant": {
+      "command": "/full/path/to/target/release/piim-qdrant",
       "args": [],
       "env": {
         "QDRANT_URL": "http://localhost:6334",
@@ -114,8 +114,8 @@ Or via `~/.config/zed/mcp.json`:
 ```json
 {
   "mcp": {
-    "piil-qdrant": {
-      "command": "/full/path/to/target/release/piil-qdrant",
+    "piim-qdrant": {
+      "command": "/full/path/to/target/release/piim-qdrant",
       "args": [],
       "env": {
         "QDRANT_URL": "http://localhost:6334",
@@ -149,7 +149,7 @@ crates/qdrant/
 
 ```
 ┌──────────────┐     stdio (MCP)     ┌─────────────────┐
-│  MCP Client  │ ◄─────────────────► │  piil-qdrant    │
+│  MCP Client  │ ◄─────────────────► │  piim-qdrant    │
 │              │                     │  (MCP Server)    │
 └──────────────┘                     └────────┬────────┘
                                               │
