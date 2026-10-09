@@ -19,15 +19,17 @@ pub struct ProjectInfoActor {
     client: Qdrant,
     embed_actor_ref: ActorRef<EmbeddingActor>,
     collection_name: String,
+    vector_name: String,
     default_project: String,
 }
 
 impl ProjectInfoActor {
-    /// Creates the actor with the given Qdrant client, embedding actor reference, and default project.
+    /// Creates the actor with the given Qdrant client, embedding actor reference, vector name, and default project.
     pub fn new(
         client: Qdrant,
         embed_actor_ref: ActorRef<EmbeddingActor>,
         collection_name: String,
+        vector_name: String,
         default_project: String,
     ) -> Self {
         let default_project = normalize_project(&default_project);
@@ -35,6 +37,7 @@ impl ProjectInfoActor {
             client,
             embed_actor_ref,
             collection_name,
+            vector_name,
             default_project,
         }
     }

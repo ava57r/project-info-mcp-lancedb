@@ -81,6 +81,7 @@ impl Message<UpsertMessage> for ProjectInfoActor {
             &msg.category,
             &current_hash,
             timestamp,
+            &self.vector_name,
             vector,
         );
 

@@ -1,8 +1,10 @@
 //! Qdrant helpers for building points and managing collections.
 
+use std::collections::HashMap;
+
 use qdrant_client::qdrant::{
     CreateCollectionBuilder, CreateFieldIndexCollectionBuilder, FieldType, PointStruct,
-    VectorParamsBuilder,
+    VectorParamsBuilder, VectorsConfigBuilder,
 };
 use qdrant_client::{Payload, Qdrant};
 use serde_json::json;
@@ -13,7 +15,7 @@ pub const DEFAULT_PROJECT: &str = "default";
 /// Default Qdrant collection name.
 pub const DEFAULT_COLLECTION: &str = "project_memory";
 
-/// Builds a Qdrant `PointStruct` from a project info record with its embedding vector.
+/// Builds a Qdrant `PointStruct` from a project info record with a named embedding vector.
 pub fn build_point(
     id: &str,
     project: &str,
@@ -21,11 +23,14 @@ pub fn build_point(
     category: &str,
     hash: &str,
     ts: i64,
+    vector_name: &str,
     vector: Vec<f32>,
 ) -> PointStruct {
+    let mut vectors = HashMap::new();
+    vectors.insert(vector_name.to_string(), vector);
     PointStruct::new(
         uuid::Uuid::new_v4().to_string(),
-        vector,
+        vectors,
         Payload::try_from(json!({
             "id": id,
             "project": project,
@@ -60,24 +65,29 @@ pub fn build_filter(
     Some(qdrant_client::qdrant::Filter::must(conditions))
 }
 
-/// Creates a Qdrant collection with the appropriate vector configuration.
+/// Creates a Qdrant collection with named vector configuration (one vector per embedding model).
 pub async fn ensure_collection(
     client: &Qdrant,
     collection_name: &str,
+    vector_name: &str,
     dimension: usize,
 ) -> anyhow::Result<()> {
     // Check if collection already exists
     let collection_exists = client.collection_exists(collection_name).await?;
 
     if !collection_exists {
+        let mut vectors_config = VectorsConfigBuilder::default();
+        vectors_config.add_named_vector_params(
+            vector_name,
+            VectorParamsBuilder::new(
+                dimension as u64,
+                qdrant_client::qdrant::Distance::Cosine,
+            ),
+        );
         client
             .create_collection(
-                CreateCollectionBuilder::new(collection_name).vectors_config(
-                    VectorParamsBuilder::new(
-                        dimension as u64,
-                        qdrant_client::qdrant::Distance::Cosine,
-                    ),
-                ),
+                CreateCollectionBuilder::new(collection_name)
+                    .vectors_config(vectors_config),
             )
             .await?;
 
@@ -127,6 +137,7 @@ mod tests {
             "file",
             "abc123",
             1234567890,
+            "qwen3-embed",
             vec![0.1; 4],
         );
         let has_id = point

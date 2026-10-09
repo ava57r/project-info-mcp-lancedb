@@ -43,7 +43,7 @@ async fn main() -> SdkResult<()> {
             })?;
 
     // Ensure the collection exists with proper vector config
-    ensure_collection(&client, &config.collection_name, config.vector_dimension)
+    ensure_collection(&client, &config.collection_name, &config.model, config.vector_dimension)
         .await
         .map_err(|e| rust_mcp_sdk::error::McpSdkError::Internal {
             description: e.to_string(),
@@ -51,8 +51,8 @@ async fn main() -> SdkResult<()> {
 
     let embed_actor_ref = embedding::EmbeddingActor::spawn(embedding::EmbeddingActor::new(
         Client::new(),
-        config.embeddings_url,
-        config.model,
+        config.embeddings_url.clone(),
+        config.model.clone(),
         None,
     ));
 
@@ -60,6 +60,7 @@ async fn main() -> SdkResult<()> {
         client,
         embed_actor_ref,
         config.collection_name,
+        config.model.clone(),
         config.project,
     ));
 

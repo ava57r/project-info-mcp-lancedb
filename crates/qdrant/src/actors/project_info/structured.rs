@@ -152,7 +152,12 @@ impl Message<StructuredSearchMessage> for ProjectInfoActor {
 
         // Build search request
         let mut search_request =
-            SearchPointsBuilder::new(self.collection_name.clone(), query_vector, msg.limit as u64);
+            SearchPointsBuilder::new(
+                self.collection_name.clone(),
+                query_vector,
+                msg.limit as u64,
+            )
+            .vector_name(&self.vector_name);
 
         if let Some(f) = filter {
             search_request = search_request.filter(f);

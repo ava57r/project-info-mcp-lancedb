@@ -33,7 +33,12 @@ impl Message<SearchMessage> for ProjectInfoActor {
             .map_err(|e| e.to_string())?;
 
         let mut search_request =
-            SearchPointsBuilder::new(self.collection_name.clone(), query_vector, msg.limit as u64);
+            SearchPointsBuilder::new(
+                self.collection_name.clone(),
+                query_vector,
+                msg.limit as u64,
+            )
+            .vector_name(&self.vector_name);
 
         if let Some(f) = build_filter(&project, msg.category.as_deref()) {
             search_request = search_request.filter(f);

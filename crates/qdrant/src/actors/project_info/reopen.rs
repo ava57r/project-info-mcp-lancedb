@@ -20,6 +20,7 @@ impl Message<ReopenMessage> for ProjectInfoActor {
         ensure_collection(
             &self.client,
             &self.collection_name,
+            &self.vector_name,
             Config::get_from_env().vector_dimension,
         )
         .await
