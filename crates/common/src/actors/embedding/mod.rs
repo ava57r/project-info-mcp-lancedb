@@ -1,13 +1,16 @@
-//! Actor requesting text embeddings from an OpenAI-compatible HTTP endpoint.
+//! Actor requesting text embeddings from an OpenAI-compatible HTTP endpoint
+//! or locally via fastembed (when the `fastembed` feature is enabled).
 
 mod request;
 mod response;
 
+#[cfg(feature = "fastembed")]
+pub mod fastembed;
+
+use async_trait::async_trait;
 use kameo::actor::{Actor, ActorRef};
-use kameo::message::{Context, Message};
 use reqwest::Client;
 
-use crate::actors::EmbeddingMessage;
 use crate::actors::embedding::request::EmbeddingParams;
 use request::EmbeddingRequest;
 use response::EmbeddingResponse;
@@ -15,12 +18,16 @@ use response::EmbeddingResponse;
 /// Encoding format for the embeddings request. The OpenAI-compatible endpoint expects "float" for float32 vectors.
 const ENCODING_FORMAT: &str = "float";
 
-/// Kameo actor that requests text embeddings from an OpenAI-compatible HTTP endpoint.
+/// Kameo actor that requests text embeddings.
+///
+/// When the `fastembed` feature is enabled, the actor can operate in
+/// local mode using fastembed (no external service needed).
+/// Otherwise it always calls the HTTP embeddings endpoint.
 pub struct EmbeddingActor {
-    http_client: Client,
-    embeddings_url: String,
+    http_client: Option<Client>,
+    embeddings_url: Option<String>,
     model: String,
-    pooling: Option<String>, // "LAST" or "MEAN"
+    pooling: Option<String>,
 }
 
 impl EmbeddingActor {
@@ -32,8 +39,8 @@ impl EmbeddingActor {
         pooling: Option<String>,
     ) -> Self {
         EmbeddingActor {
-            http_client,
-            embeddings_url,
+            http_client: Some(http_client),
+            embeddings_url: Some(embeddings_url),
             model,
             pooling,
         }
@@ -51,20 +58,17 @@ impl Actor for EmbeddingActor {
     }
 }
 
-impl Message<EmbeddingMessage> for EmbeddingActor {
-    type Reply = Result<Vec<f32>, String>;
+#[async_trait]
+impl Embedder for EmbeddingActor {
+    async fn embed(&self, query: &str) -> Result<Vec<f32>, String> {
+        let http_client = self.http_client.as_ref().ok_or_else(|| {
+            "Embedding actor is not configured for HTTP (local mode only)".to_string()
+        })?;
 
-    /// Posts the query text to the embeddings endpoint and replies with the first returned vector.
-    async fn handle(
-        &mut self,
-        msg: EmbeddingMessage,
-        _ctx: &mut Context<Self, Self::Reply>,
-    ) -> Self::Reply {
-        let response = self
-            .http_client
-            .post(&self.embeddings_url)
+        let response = http_client
+            .post(self.embeddings_url.as_ref().unwrap())
             .json(&EmbeddingRequest {
-                input: &msg.query,
+                input: query,
                 model: &self.model,
                 encoding_format: ENCODING_FORMAT,
                 params: self.pooling.as_ref().map(|p| EmbeddingParams {
@@ -83,4 +87,9 @@ impl Message<EmbeddingMessage> for EmbeddingActor {
             Err("Model returned empty vectors array".to_string())
         }
     }
+}
+
+#[async_trait]
+pub trait Embedder: Send + Sync + 'static {
+    async fn embed(&self, text: &str) -> Result<Vec<f32>, String>;
 }

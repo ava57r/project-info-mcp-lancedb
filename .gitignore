@@ -28,3 +28,4 @@ rustc-ice-*.txt
 /target
 /.opencode_memory
 /.venv
+/.fastembed_cache

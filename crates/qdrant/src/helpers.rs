@@ -3,8 +3,9 @@
 use std::collections::HashMap;
 
 use qdrant_client::qdrant::{
-    CreateCollectionBuilder, CreateFieldIndexCollectionBuilder, FieldType, PointStruct,
-    VectorParamsBuilder, VectorsConfigBuilder,
+    CreateCollectionBuilder, CreateFieldIndexCollectionBuilder, CreateVectorNameRequestBuilder,
+    DenseVectorCreationConfigBuilder, Distance, FieldType, PointStruct, VectorParamsBuilder,
+    VectorsConfigBuilder,
 };
 use qdrant_client::{Payload, Qdrant};
 use serde_json::json;
@@ -64,6 +65,7 @@ pub fn build_filter(
 }
 
 /// Creates a Qdrant collection with named vector configuration (one vector per embedding model).
+/// If the collection exists but the vector name is missing, adds it.
 pub async fn ensure_collection(
     client: &Qdrant,
     collection_name: &str,
@@ -77,7 +79,7 @@ pub async fn ensure_collection(
         let mut vectors_config = VectorsConfigBuilder::default();
         vectors_config.add_named_vector_params(
             vector_name,
-            VectorParamsBuilder::new(dimension as u64, qdrant_client::qdrant::Distance::Cosine),
+            VectorParamsBuilder::new(dimension as u64, Distance::Cosine),
         );
         client
             .create_collection(
@@ -93,6 +95,38 @@ pub async fn ensure_collection(
                     field,
                     FieldType::Keyword,
                 ))
+                .await?;
+        }
+    } else {
+        // Collection exists — check if the required vector name is present
+        let info = client.collection_info(collection_name).await?;
+        let has_vector = info
+            .result
+            .as_ref()
+            .and_then(|c| c.config.as_ref())
+            .and_then(|c| c.params.as_ref())
+            .and_then(|p| p.vectors_config.as_ref())
+            .and_then(|v| v.config.as_ref())
+            .map(|config| match config {
+                qdrant_client::qdrant::vectors_config::Config::ParamsMap(map) => {
+                    map.map.contains_key(vector_name)
+                }
+                qdrant_client::qdrant::vectors_config::Config::Params(_params) => {
+                    // Single unnamed vector — check if it matches
+                    false
+                }
+            })
+            .unwrap_or(false);
+
+        if !has_vector {
+            client
+                .create_vector_name(
+                    CreateVectorNameRequestBuilder::new(
+                        collection_name,
+                        vector_name,
+                        DenseVectorCreationConfigBuilder::new(dimension as u64, Distance::Cosine),
+                    ),
+                )
                 .await?;
         }
     }

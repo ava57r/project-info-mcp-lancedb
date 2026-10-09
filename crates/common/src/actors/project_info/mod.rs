@@ -12,13 +12,13 @@ pub mod upsert;
 
 use kameo::actor::{Actor, ActorRef};
 
-use crate::actors::embedding::EmbeddingActor;
+use crate::actors::embedding;
 use crate::store::MemoryStore;
 
 /// Kameo actor managing project info records via a backend storage implementation.
 pub struct ProjectInfoActor {
     store: Box<dyn MemoryStore>,
-    embed_actor_ref: ActorRef<EmbeddingActor>,
+    embedder: Box<dyn embedding::Embedder>,
     default_project: String,
 }
 
@@ -27,13 +27,13 @@ impl ProjectInfoActor {
     /// reference, and default project name.
     pub fn new(
         store: Box<dyn MemoryStore>,
-        embed_actor_ref: ActorRef<EmbeddingActor>,
+        embedder: Box<dyn embedding::Embedder>,
         default_project: String,
     ) -> Self {
         let default_project = normalize_project(&default_project);
         ProjectInfoActor {
             store,
-            embed_actor_ref,
+            embedder,
             default_project,
         }
     }
