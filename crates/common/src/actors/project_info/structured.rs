@@ -3,9 +3,7 @@
 use kameo::message::{Context, Message};
 
 use crate::actors::project_info::ProjectInfoActor;
-use crate::actors::{
-    EmbeddingMessage, SearchHit, StatsData, StatsStructuredMessage, StructuredSearchMessage,
-};
+use crate::actors::{SearchHit, StatsData, StatsStructuredMessage, StructuredSearchMessage};
 
 impl Message<StatsStructuredMessage> for ProjectInfoActor {
     type Reply = Result<StatsData, String>;
@@ -32,8 +30,8 @@ impl Message<StructuredSearchMessage> for ProjectInfoActor {
     ) -> Self::Reply {
         let project = self.resolve_project(&msg.project);
         let query_vector = self
-            .embed_actor_ref
-            .ask(EmbeddingMessage { query: msg.query })
+            .embedder
+            .embed(&msg.query)
             .await
             .map_err(|e| e.to_string())?;
 

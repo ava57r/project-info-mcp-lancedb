@@ -2,8 +2,8 @@
 
 use kameo::message::{Context, Message};
 
+use crate::actors::SearchMessage;
 use crate::actors::project_info::{ProjectInfoActor, format::format_matches};
-use crate::actors::{EmbeddingMessage, SearchMessage};
 
 impl Message<SearchMessage> for ProjectInfoActor {
     type Reply = Result<String, String>;
@@ -16,8 +16,8 @@ impl Message<SearchMessage> for ProjectInfoActor {
     ) -> Self::Reply {
         let project = self.resolve_project(&msg.project);
         let query_vector = self
-            .embed_actor_ref
-            .ask(EmbeddingMessage { query: msg.query })
+            .embedder
+            .embed(&msg.query)
             .await
             .map_err(|e| e.to_string())?;
 

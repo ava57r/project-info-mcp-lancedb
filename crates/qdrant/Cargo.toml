@@ -1,11 +1,11 @@
 [package]
 name = "piim-qdrant"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 
 
 [dependencies]
-piim-common = { path = "../common" }
+piim-common = { path = "../common", features = ["fastembed"] }
 anyhow = "1.0"
 async-trait = "0.1"
 kameo = "0.22"

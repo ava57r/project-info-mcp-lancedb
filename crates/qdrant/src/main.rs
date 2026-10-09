@@ -22,7 +22,7 @@ use piim_common::actors::embedding;
 use piim_common::actors::project_info::ProjectInfoActor;
 use piim_common::mcp::MemoryToolHandler;
 
-use crate::config::Config;
+use crate::config::{Config, EmbeddingBackend};
 use crate::helpers::ensure_collection;
 
 /// Main entry point for the `piim` MCP server.
@@ -54,18 +54,29 @@ async fn main() -> SdkResult<()> {
         description: e.to_string(),
     })?;
 
-    let embed_actor_ref = embedding::EmbeddingActor::spawn(embedding::EmbeddingActor::new(
-        Client::new(),
-        config.embeddings_url.clone(),
-        config.model.clone(),
-        None,
-    ));
+    // Create the appropriate embedding actor based on the selected backend.
+    let embed_actor = match &config.embedding_backend {
+        EmbeddingBackend::Http => Box::new(embedding::EmbeddingActor::new(
+            Client::new(),
+            config.embeddings_url.clone(),
+            config.model.clone(),
+            None,
+        )) as Box<dyn embedding::Embedder>,
+        EmbeddingBackend::Fastembed(model) => {
+            let actor = embedding::fastembed::EmbeddingActor::new_fastembed(model.clone())
+                .map_err(|e| rust_mcp_sdk::error::McpSdkError::Internal {
+                    description: format!("Failed to initialize local embedding model: {e}"),
+                })?;
+
+            Box::new(actor) as Box<dyn embedding::Embedder>
+        }
+    };
 
     let store = store::QdrantStore::new(client, config.collection_name, config.model.clone());
 
     let memory_actor_ref = ProjectInfoActor::spawn(ProjectInfoActor::new(
         Box::new(store),
-        embed_actor_ref,
+        embed_actor,
         config.project,
     ));
 

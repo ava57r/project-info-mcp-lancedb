@@ -33,16 +33,16 @@ async fn main() -> SdkResult<()> {
         .await
         .map_err(|description| rust_mcp_sdk::error::McpSdkError::Internal { description })?;
 
-    let embed_actor_ref = embedding::EmbeddingActor::spawn(embedding::EmbeddingActor::new(
+    let embed_actor = embedding::EmbeddingActor::new(
         Client::new(),
         config.embeddings_url.clone(),
         config.model.clone(),
         None,
-    ));
+    );
 
     let memory_actor_ref = ProjectInfoActor::spawn(ProjectInfoActor::new(
         Box::new(store),
-        embed_actor_ref,
+        Box::new(embed_actor),
         config.project.clone(),
     ));
 
