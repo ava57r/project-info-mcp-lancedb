@@ -4310,25 +4310,38 @@ dependencies = [
 name = "piim"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "arrow-array",
  "arrow-schema",
  "async-trait",
  "axum 0.8.9",
  "chrono",
  "flate2",
- "hex",
  "kameo",
  "lancedb",
+ "piim-common",
+ "reqwest 0.13.5",
+ "rust-mcp-sdk",
+ "serde",
+ "serde_json",
+ "tar",
+ "tokio",
+ "tokio-stream",
+ "tower-http 0.6.11",
+]
+
+[[package]]
+name = "piim-common"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "hex",
+ "kameo",
  "reqwest 0.13.5",
  "rust-mcp-sdk",
  "serde",
  "serde_json",
  "sha2 0.11.0",
- "tar",
- "tokio",
- "tokio-stream",
- "tower-http 0.6.11",
 ]
 
 [[package]]
@@ -4337,14 +4350,13 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "hex",
  "kameo",
+ "piim-common",
  "qdrant-client",
  "reqwest 0.13.5",
  "rust-mcp-sdk",
  "serde",
  "serde_json",
- "sha2 0.11.0",
  "tokio",
  "tokio-stream",
  "uuid",
