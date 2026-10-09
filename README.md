@@ -1,8 +1,13 @@
 # PIIM (Project Info In MCP)
 
-A persistent project-memory MCP server in Rust. Stores discrete facts (architecture notes, TODOs, API contracts, changelogs) in [LanceDB](https://lancedb.com) with vector + full-text hybrid search, exposed to AI agents via the [Model Context Protocol](https://modelcontextprotocol.io) over stdio.
+A persistent project-memory MCP server in Rust. Stores discrete facts (architecture notes, TODOs, API contracts, changelogs) in a vector database with hybrid search, exposed to AI agents via the [Model Context Protocol](https://modelcontextprotocol.io) over stdio.
 
-Built with `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), `lancedb` for storage, and any OpenAI-compatible embeddings API (e.g. Qwen3-embed, TEI, vLLM).
+This repository is a Cargo workspace with two storage backends sharing one core:
+
+- **`piim`** — embedded [LanceDB](https://lancedb.com) storage ([`crates/lancedb`](crates/lancedb)) with ANN vector + full-text search, REST API, and dashboard. This README documents that binary.
+- **`piim-qdrant`** — remote [Qdrant](https://qdrant.tech) storage ([`crates/qdrant`](crates/qdrant), see its [README](crates/qdrant/README.md)).
+
+Both binaries are driven by **`piim-common`** ([`crates/common`](crates/common)): `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), the MCP tool layer, and the `MemoryStore` backend trait. Embeddings come from any OpenAI-compatible API (e.g. Qwen3-embed, TEI, vLLM).
 
 ## Features
 
@@ -11,12 +16,13 @@ Built with `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), `lancedb` for
 - **Hybrid search** — ANN vector search over embeddings + FTS index on `content`, with optional `category` filter, always scoped to the active project (or `"*"` for all).
 - **Content-aware upsert** — SHA-256 `file_hash` check skips embedding inference when content is unchanged; otherwise delete + re-insert. Dedup key is `(id, project)`, so the same file path can exist in many projects.
 - **File catalog** — `save_file_description` stores one `file`-category record per source file *per project*; the `(file path, project)` pair is the unique id.
-- **Actor isolation** — `ProjectInfoActor` owns the LanceDB table; `EmbeddingActor` owns the HTTP client for the embeddings API.
+- **Pluggable storage backend** — the MCP surface is backed by the `MemoryStore` trait (`piim-common::store`); `crates/lancedb` provides `LanceStore` (this binary) and `crates/qdrant` provides `QdrantStore`. Query construction, error messages, and maintenance ops (`optimize`, `reopen`) live in each implementation; the actor and MCP layers stay backend-agnostic.
+- **Actor isolation** — `ProjectInfoActor` owns the storage backend (a LanceDB `Table` for `piim`); `EmbeddingActor` owns the HTTP client for the embeddings API.
 - **Zero-config defaults** — works out of the box against `http://localhost:8002/v1/embeddings`.
 
 ## Prerequisites
 
-- Rust 1.80+ (`cargo build`)
+- Rust 1.85+ (edition 2024 workspace; `cargo build`)
 - A running OpenAI-compatible embeddings endpoint, e.g.:
   ```bash
   curl -X POST http://localhost:8002/v1/embeddings \
@@ -27,11 +33,19 @@ Built with `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), `lancedb` for
 ## Build & Run
 
 ```bash
-cargo build --release
-./target/release/piim
+cargo build --release           # whole workspace (piim + piim-qdrant)
+./target/release/piim           # LanceDB backend (stdio MCP + HTTP dashboard)
+./target/release/piim-qdrant    # Qdrant backend (stdio MCP)
 ```
 
-With custom config:
+Build a single binary:
+
+```bash
+cargo build --release -p piim         # LanceDB only
+cargo build --release -p piim-qdrant  # Qdrant only
+```
+
+Run `piim` with custom config:
 
 ```bash
 LANCEDB_PATH=./.opencode_memory/lance_db \
@@ -54,13 +68,15 @@ PROJECT_NAME=my-project \
 | `HTTP_PORT` | `6333` | Port for the REST API + dashboard (Qdrant-style). Set to `0` or empty to disable HTTP (stdio MCP only). |
 | `SNAPSHOT_DIR` | `./.opencode_memory/snapshots` | Directory where `.tar.gz` DB snapshots are stored. |
 
-On startup the server opens the `project_memory` table, or creates it with the Arrow schema from `src/helpers.rs` if missing. If an existing table lacks the `project` column (created by an older version), the server exits with an error — recreate the table (delete it or use a fresh `LANCEDB_PATH`) instead of migrating.
+On startup the server opens the `project_memory` table, or creates it with the Arrow schema from `crates/lancedb/src/helpers.rs` if missing. If an existing table lacks the `project` column (created by an older version), the server exits with an error — recreate the table (delete it or use a fresh `LANCEDB_PATH`) instead of migrating.
+
+The Qdrant binary shares `EMBEDDINGS_URL`, `EMBEDDINGS_MODEL`, `VECTOR_DIMENSION`, and `PROJECT_NAME`, and replaces the storage settings with `QDRANT_URL`, `QDRANT_API_KEY`, and `QDRANT_COLLECTION` — see [crates/qdrant/README.md](crates/qdrant/README.md).
 
 ## Dashboard & REST API (Qdrant-style)
 
 Alongside MCP stdio, the server exposes an HTTP API + dashboard on `:HTTP_PORT` (default `6333`):
 
-- Dashboard: `http://localhost:6333/dashboard` — collection overview, per-project/category stats, point browser (filter + pagination + delete), hybrid search, upsert form, snapshot manager. Page markup, stylesheet, and client script live in `src/http/static/` (`dashboard.html`, `style.css`, `app.js`), baked into the binary via `include_str!` and served at `/dashboard`, `/static/style.css`, `/static/app.js`.
+- Dashboard: `http://localhost:6333/dashboard` — collection overview, per-project/category stats, point browser (filter + pagination + delete), hybrid search, upsert form, snapshot manager. Page markup, stylesheet, and client script live in `crates/lancedb/src/http/static/` (`dashboard.html`, `style.css`, `app.js`), baked into the binary via `include_str!` and served at `/dashboard`, `/static/style.css`, `/static/app.js`.
 - `GET /healthz`, `GET /readyz`, `GET /api/version`
 - `GET /api/collections`, `GET /api/collections/stats?project=...`
 - `GET /api/points?project=&category=&query=&limit=&offset=`
@@ -117,25 +133,46 @@ Add to `opencode.json`:
 ## Architecture
 
 ```text
-stdin (JSON-RPC) → StdioTransport → Server(MemoryToolHandler)
-                                            │ tools/call
-                                            ▼
-                                  ProjectInfoActor (kameo)
-                                   ├─ owns lancedb Table
-                                   └─ asks EmbeddingActor ──POST EMBEDDINGS_URL──▶ embeddings API
+┌───────────────────────  piim-common (crates/common)  ────────────────────────┐
+│ stdin (JSON-RPC) → StdioTransport → MemoryToolHandler  (6 MCP tools)         │
+│                                        │ tools/call                          │
+│                                        ▼                                     │
+│                          ProjectInfoActor (kameo)                            │
+│                            ├─ generic over the MemoryStore trait             │
+│                            └─ asks EmbeddingActor ──POST EMBEDDINGS_URL──▶   │
+│                                                             embeddings API   │
+└────────────────────────────────┬─────────────────────────────────────────────┘
+                                 │ MemoryStore (crates/common/src/store.rs)
+                 ┌───────────────┴───────────────┐
+                 ▼                               ▼
+   crates/lancedb  (piim)             crates/qdrant  (piim-qdrant)
+   LanceStore: table open/create,     QdrantStore: client, points & filters,
+   Arrow records, hybrid query,       hybrid/structured search, counts,
+   hash dedup, FTS index, optimize,   payload stats, optimize, collection
+   snapshots, REST API + dashboard    creation
 ```
 
-- `src/main.rs` — stdio wiring, table open/create (+ fail-fast check for the `project` column on old tables), actor spawn, MCP `Server::start()`.
-- `src/config.rs` — `Config::get_from_env()` with defaults above.
-- `src/actors/embed.rs` — `EmbeddingActor`: `POST {input, model, encoding_format:"float"}` → `Vec<f32>`.
-- `src/actors/memory/{mod,upsert,search,optimize,stats}.rs` — LanceDB queries, hash dedup, FTS index creation.
-- `src/mcp/{mod,upsert,search,optimize,save_file,save_function,stats}.rs` — `McpTool` impls (`tools/list`, `tools/call`).
-- `src/helpers.rs` — `table_schema()` + `build_arrow_record()` (validates `vector.len() == VECTOR_DIMENSION`).
+| Crate | Package | Role |
+|---|---|---|
+| [`crates/common`](crates/common) | `piim-common` | Shared core: `MemoryStore` trait, `CommonConfig` (shared env parsing), `ProjectInfoActor` + all message handlers, `EmbeddingActor`, MCP server + tool definitions, search/stats text formatting. |
+| [`crates/lancedb`](crates/lancedb) | `piim` | LanceDB backend binary (this README). |
+| [`crates/qdrant`](crates/qdrant) | `piim-qdrant` | Qdrant backend binary. |
+
+Backend-specific behavior — query construction, error messages, `optimize`/`reopen` wording, the empty-stats noun ("table" vs "collection") — lives entirely inside each `MemoryStore` implementation, so adding a backend means implementing the trait plus a thin `main.rs`/`config.rs`.
+
+### `piim` (LanceDB) module map
+
+- `crates/lancedb/src/main.rs` — stdio wiring, table open/create (+ fail-fast check for the `project` column on old tables), actor spawn, MCP `Server::start()`, HTTP dashboard.
+- `crates/lancedb/src/config.rs` — `Config::get_from_env()` with defaults above.
+- `crates/lancedb/src/store.rs` — `LanceStore` (`MemoryStore` impl): hybrid/vector queries, hash-dedup precheck, FTS index creation, column-projection stats.
+- `crates/lancedb/src/helpers.rs` — `table_schema()` + `build_arrow_record()` (validates `vector.len() == VECTOR_DIMENSION`).
+- `crates/lancedb/src/http/` — REST routes, dashboard, snapshots (static assets baked in via `include_str!`).
+- `crates/common/src/actors/` — `EmbeddingActor` (`POST {input, model, encoding_format:"float"}` → `Vec<f32>`) and the backend-agnostic `ProjectInfoActor` handlers.
 
 ## Development
 
 ```bash
-cargo fmt        # format
-cargo clippy     # lint (must be clean)
-cargo test --all # tests
+cargo fmt --all             # format all workspace members
+cargo clippy --all-targets  # lint (must be clean)
+cargo test --all            # tests across the workspace
 ```
