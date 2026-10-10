@@ -254,10 +254,10 @@ impl MemoryToolHandler {
         extra.insert(
             "serverInfo".to_string(),
             serde_json::json!({
-                "name": "piim",
+                "name": details.server_info.name,
                 "version": self.version.to_string(),
-                "title": "Project Info in MCP",
-                "description": "Persistent project memory over LanceDB with hybrid search",
+                "title": details.server_info.title,
+                "description": details.server_info.description,
             }),
         );
         if let Some(instructions) = details.instructions.clone() {

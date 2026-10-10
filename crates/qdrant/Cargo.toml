@@ -9,7 +9,6 @@ piim-common = { path = "../common", features = ["fastembed"] }
 anyhow = "1.0"
 async-trait = "0.1"
 kameo = "0.22"
-uuid = { version = "1.27", features = ["v4"] }
 qdrant-client = "1.19"
 rust-mcp-sdk = { version = "2.0", features = ["stdio", "server"] }
 reqwest = { version = "0.13", features = ["json"] }
@@ -17,3 +16,4 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.38", features = ["full"] }
 tokio-stream = "0.1"
+uuid = { version = "1.27", features = ["v4"] }

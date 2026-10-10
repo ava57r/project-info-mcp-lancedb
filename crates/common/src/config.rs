@@ -1,4 +1,4 @@
-//! Runtime configuration shared by all `piim` server backends.
+//! Runtime configuration shared by all PIIM server backends.
 
 use std::env;
 

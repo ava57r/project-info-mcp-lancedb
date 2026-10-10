@@ -1,4 +1,4 @@
-//! Shared building blocks for the `piim` memory servers: kameo actors, MCP
+//! Shared building blocks for the PIIM memory servers: kameo actors, MCP
 //! tool dispatch, message types, and the backend-agnostic [`store::MemoryStore`]
 //! trait implemented by each storage backend (LanceDB, Qdrant).
 

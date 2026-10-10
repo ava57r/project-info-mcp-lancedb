@@ -44,7 +44,7 @@ description: This skill provides the AI agent with a high-performance, persisten
 *   **Output:** matches are listed as `[project:category] id (distance)` followed by the stored content.
 
 ### 5. `optimize_database`
-*   **Purpose:** Triggers file compaction, merges small Arrow record batches, and garbage-collects historical timeline versions within the LanceDB table to optimize disk I/O and maintain low-latency lookups.
+*   **Purpose:** Triggers file compaction, merges small Arrow record batches, and garbage-collects historical timeline versions within the DB table to optimize disk I/O and maintain low-latency lookups.
 
 ### 6. `memory_stats`
 *   **Purpose:** Reports memory usage statistics — total record count, per-category breakdown, and content size (total/avg chars) — so you can watch how full the memory is without reading every record.
@@ -54,7 +54,7 @@ description: This skill provides the AI agent with a high-performance, persisten
 
 ## Multi-Project Scoping
 
-*   One LanceDB database serves several projects: every record carries a `project` column.
+*   One database serves several projects: every record carries a `project` column.
 *   **Default:** when you omit `project`, the server uses its `PROJECT_NAME` env value (`default` if unset). Reads and writes never leak across projects unless you explicitly pass `"*"` (search/stats only).
 *   **Rule:** always pass the current project name explicitly in `upsert_project_info`, `save_file_description`, `save_function_description`, `hybrid_search_memory`, and `memory_stats` when the session's project differs from the server default. Never invent project names — use the repository/project name you are working in.
 *   **Cross-project lookup:** pass `project: "*"` to `hybrid_search_memory` / `memory_stats` when the user asks to search everywhere; the reply shows which project each hit belongs to (`[project:category]`).
@@ -66,7 +66,7 @@ description: This skill provides the AI agent with a high-performance, persisten
 *   **On-Demand Retrieval:** When starting a task in an area of the codebase not currently visible in your workspace context, call `hybrid_search_memory` first to fetch only relevant definitions.
 
 ### 2. Categorization Protocol
-*   Categorize data with precision to maintain efficient SQL metadata filtering on the LanceDB engine:
+*   Categorize data with precision to maintain efficient SQL metadata filtering on the DB engine:
     *   Use `file` for per-file content descriptions written via `save_file_description` (id = relative file path).
     *   Use `function` for per-function descriptions written via `save_function_description` (id = `<file_path>::<function_name>` or `<file_path>::<struct_name>::<function_name>`).
     *   Use `architecture` for configuration formats, core dependencies, API endpoint signatures, and ADRs.

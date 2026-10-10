@@ -120,13 +120,11 @@ pub async fn ensure_collection(
 
         if !has_vector {
             client
-                .create_vector_name(
-                    CreateVectorNameRequestBuilder::new(
-                        collection_name,
-                        vector_name,
-                        DenseVectorCreationConfigBuilder::new(dimension as u64, Distance::Cosine),
-                    ),
-                )
+                .create_vector_name(CreateVectorNameRequestBuilder::new(
+                    collection_name,
+                    vector_name,
+                    DenseVectorCreationConfigBuilder::new(dimension as u64, Distance::Cosine),
+                ))
                 .await?;
         }
     }

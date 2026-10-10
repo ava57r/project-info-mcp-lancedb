@@ -1,6 +1,6 @@
 # Instructions for Using PIIM - Project Info in MCP
 
-You have access to an ultra-fast, local vector database (LanceDB) powered by Kameo actors. 
+You have access to an ultra-fast, local vector database powered by Kameo actors. 
 Use it strategically to minimize context window usage and speed up inference according to the following rules:
 
 ### 1. When to Save Information (`upsert_project_info`):
