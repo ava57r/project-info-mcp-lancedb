@@ -54,6 +54,26 @@ See the backend READMEs for copy-paste configs: [piim-lance](crates/lancedb/READ
 
 Both backends expose the same 7 MCP tools (`upsert_project_info`, `delete_project_info`, `save_file_description`, `save_function_description`, `hybrid_search_memory`, `optimize_database`, `memory_stats`). See [crates/lancedb/README.md](crates/lancedb/README.md#tools) for the argument table.
 
+## Search behavior & known limitations
+
+Hybrid search is vocabulary-driven: queries that share domain vocabulary with
+records rank reliably, while exact symbol lookups and verbatim phrases do not.
+
+- ✅ Works: queries sharing vocabulary with records — e.g. Keycloak token flow,
+  retention TTL cleanup, BDT sync publish, S3 photo upload, complex detail
+  query — return the right records.
+- ❌ Unreliable: exact symbol lookup (e.g. `SignFixationProcessor
+  proceed_fixation`) and verbatim phrases — the backend returns `0.0000`
+  -distance ties over unrelated records. `optimize_database` (compaction) does
+  not fix this; it is a PIIM engine limitation (embedding granularity + FTS
+  weighting), not a content problem. Fixing it needs backend work (embedding
+  model change, FTS weight tuning in `piim-lancedb`).
+
+Recommendation: phrase queries with domain + action keywords
+(e.g. "sign fixation save S3 status propagate", "complex statuses cameras eager
+load", "Keycloak refresh token") rather than symbol names — that pattern
+consistently hits.
+
 ## LanceDB vs Qdrant — the databases compared
 
 This repo pins `lancedb` **0.40.0** (`piim-lance`) and `qdrant-client` **1.19** (`piim-qdrant`), but the choice between backends is really a choice between two different database philosophies. Both are Apache-2.0 open source and written in Rust.

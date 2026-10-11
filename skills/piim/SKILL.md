@@ -44,7 +44,7 @@ description: This skill provides the AI agent with a high-performance, persisten
 ### 5. `hybrid_search_memory`
 *   **Purpose:** Executes an ultra-fast hybrid search combining dense semantic vectors and exact keyword matches (BM25) over the stored project repository knowledge. Search is always scoped to one project (or all with `"*"`).
 *   **Parameters:**
-    *   `query` (string): Natural language query or exact function/variable name.
+    *   `query` (string): Natural language query with domain + action keywords (e.g., "sign fixation save S3 status propagate"). Bare symbol names and verbatim phrases are unreliable (see Operational Rules §5).
     *   `category` (string, optional): Filters the search strictly to a specific metadata category to narrow scope. Pick by use-case: `architecture` for design, `codestyle` for rules before writing code, `file`/`function` for symbol lookup, `code_contract` for interfaces, `todo`/`changelog` for plans/history. The query is auto-expanded with category keywords for smart search.
     *   `limit` (integer, required): Maximum number of records to return (e.g., 10). Always pass an explicit value — the server has no default and the call fails if omitted.
     *   `project` (string, optional): Project scope; defaults to the server's `PROJECT_NAME`. Pass `"*"` to search across all projects.
@@ -103,16 +103,17 @@ description: This skill provides the AI agent with a high-performance, persisten
 
 ### 5. How to Search Function/Type Usage in the Project
 *   Call `hybrid_search_memory` with:
-    *   `query` — the exact symbol name (e.g., `validate_jwt`), optionally with context ("who calls validate_jwt").
+    *   `query` — domain + action keywords describing what the symbol does (e.g., "sign fixation save S3 status propagate", "Keycloak refresh token"), not the bare symbol name.
     *   `category` — `"file"` for file descriptions, `"function"` for function descriptions (omit to search both plus everything else).
     *   `limit` — how many candidate files to inspect (e.g., `10`).
     *   `project` (optional) — project scope; defaults to the server's `PROJECT_NAME`. Pass `"*"` only on explicit user request to search all projects.
 *   The reply lists matches as `[project:category] id (distance)` followed by the stored description: file hits show the file path, function hits show `<file_path>::<function>` ids. Treat the top hits as candidates: open those files and grep for the symbol to confirm exact usages.
+*   **Known limitation (verified by tests):** hybrid search is vocabulary-driven. Queries sharing vocabulary with records (Keycloak token flow, retention TTL cleanup, BDT sync publish, S3 photo upload, complex detail query) return the right records; bare symbol lookups (e.g., `SignFixationProcessor proceed_fixation`) and verbatim phrases tie at `0.0000` distance over unrelated records. That is a PIIM engine limitation (embedding granularity + FTS weighting), not a content problem — `optimize_database` does not fix it; it needs backend work (embedding model change, FTS weight tuning in `piim-lancedb`). If hits tie at `0.0000`, rephrase with domain vocabulary and retry.
 *   If you need types and contracts instead of files, repeat with `category` `code_contract` or `architecture`; if the file/function catalog is empty, fall back to ripgrep over the repository.
 
 ### 6. Precision Token Matching
-*   When a user asks about specific system internals (e.g., *"Where do we validate JWT tokens?"*), do not guess. Invoke `hybrid_search_memory` with the method name or keyword. The hybrid FTS (Full-Text Search) engine will locate exact lexical matches, while the vector engine fetches surrounding semantic contexts.
-*   To find usages of a function, type, or constant across the project, call `hybrid_search_memory` with the symbol name as `query`: first with `category: "function"` for exact function descriptions, then with `category: "file"` for candidate files — open the top hits and grep for the symbol to confirm exact usages.
+*   When a user asks about specific system internals (e.g., *"Where do we validate JWT tokens?"*), do not guess. Invoke `hybrid_search_memory` with domain + action keywords — the hybrid FTS (Full-Text Search) engine locates lexical matches, while the vector engine fetches surrounding semantic contexts.
+*   To find usages of a function, type, or constant across the project, call `hybrid_search_memory` with a domain-vocabulary query describing what the symbol does (NOT the bare symbol name — see §5): first with `category: "function"` for function descriptions, then with `category: "file"` for candidate files — open the top hits and grep for the symbol to confirm exact usages.
 *   **Exact ID retrieval:** there is no `get_project_info_by_id` tool — to fetch a known record (file path like `src/auth.rs` or function id like `src/auth.rs::validate_jwt`), call `hybrid_search_memory` with that id/symbol as `query` (plus its `category`: `"file"` / `"function"`). The FTS layer matches the id lexically; treat the top hit as the record.
 
 ### 7. How to Watch Memory Usage (`memory_stats`)

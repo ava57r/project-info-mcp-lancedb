@@ -52,17 +52,17 @@ Use it strategically to minimize context window usage and speed up inference acc
 
 ### 6. How to Search Function/Type Usage in the Project:
 *   To find where a function, type, or constant is used, call `hybrid_search_memory` with:
-    *   `query` — the exact symbol name (e.g., `validate_jwt`), optionally with context ("who calls validate_jwt").
+    *   `query` — domain + action keywords describing what the symbol does (e.g., "sign fixation save S3 status propagate"), not the bare symbol name. Bare symbol lookups (e.g., `SignFixationProcessor proceed_fixation`) and verbatim phrases are unreliable: the backend returns `0.0000`-distance ties over unrelated records. This is a PIIM engine limitation (embedding granularity + FTS weighting), not a content problem — `optimize_database` does not fix it.
     *   `category` — `"function"` for exact function descriptions, `"file"` for candidate files (omit to search both plus everything else).
     *   `limit` — how many candidate files to inspect (e.g., `10`).
     *   `project` (optional) — project scope; defaults to `PROJECT_NAME`. Pass `"*"` only when the user explicitly asks to search across all projects.
-*   The reply lists matches as `[project:category] id (distance)` followed by the stored description: file hits show the file path, function hits show `<file_path>::<function>` ids. Treat the top hits as candidates: open those files and grep for the symbol to confirm exact usages.
+*   The reply lists matches as `[project:category] id (distance)` followed by the stored description: file hits show the file path, function hits show `<file_path>::<function>` ids. Treat the top hits as candidates: open those files and grep for the symbol to confirm exact usages. If several hits tie at `0.0000` distance, the ranking is meaningless — rephrase with domain vocabulary and retry.
 *   Repeat the search with `category` `architecture` or `code_contract` when you need contracts and ADRs instead of files/functions.
 
 ### 7. When to Search Memory (`hybrid_search_memory`):
 *   **Context Retrieval:** At the beginning of a session if the user asks you to modify or work on a module whose contents are missing from your current context window.
 *   **Constraint Checking:** When you need to recall architectural agreements (always apply the filter `category: "architecture"` to narrow down results). When you need to recall code style rules before writing or editing code, apply the filter `category: "codestyle"` (e.g. query `"naming conventions"`, `"error handling"`, `"import grouping"`).
-*   **Exact Matching:** When looking for precise function names, variables, type definitions, or specific error-handling logic.
+*   **Vocabulary queries:** phrase queries with domain + action keywords ("sign fixation save S3 status propagate", "complex statuses cameras eager load", "Keycloak refresh token") rather than symbol names — that pattern consistently hits. Bare symbol names and verbatim phrases tie at `0.0000` distance and do not rank (engine limitation, see section 6).
 
 ### 8. How to Watch Memory Usage (`memory_stats`):
 *   Call `memory_stats` with optional `project` (defaults to `PROJECT_NAME`; `"*"` aggregates all projects with a per-project breakdown) to see record count, per-category breakdown, and content size (total/avg chars). It runs no embedding inference, so it is cheap — use it at session start to gauge what's stored, before a file-catalog walk to avoid re-saving, or when deciding whether to run `optimize_database` / prune stale records.

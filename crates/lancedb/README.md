@@ -188,6 +188,14 @@ On startup the server opens the `project_memory` table, or creates it with the A
 | `optimize_database` | _(none — must be called with no arguments)_ | Runs LanceDB `optimize()` / compaction on the table. |
 | `memory_stats` | `project?` (defaults to `PROJECT_NAME`; `"*"` aggregates all projects) | Reports total record count, per-category breakdown, and content size via a single column-projection scan; no embedding inference. |
 
+> **Search tip / known limitation:** hybrid search is vocabulary-driven. Phrase
+> queries with domain + action keywords (e.g. "sign fixation save S3 status
+> propagate", "Keycloak refresh token") rank reliably; exact symbol lookups
+> (e.g. `SignFixationProcessor proceed_fixation`) and verbatim phrases can tie
+> at `0.0000` distance over unrelated records. `optimize_database` (compaction)
+> does not fix this — it needs backend work (embedding model change, FTS weight
+> tuning). See the root [README](../../README.md#search-behavior--known-limitations).
+
 ## Structure
 
 ```
