@@ -39,6 +39,13 @@ impl CommonConfig {
             .filter(|v| !v.trim().is_empty())
             .unwrap_or_else(|| crate::DEFAULT_PROJECT.to_string());
 
+        if env::var("FASTEMBED_CACHE_DIR").is_err() {
+            if let Some(home) = dirs::home_dir() {
+                let cache_dir = home.join(".cache").join("fastembed");
+                unsafe { env::set_var("FASTEMBED_CACHE_DIR", cache_dir); }
+            }
+        }
+
         CommonConfig {
             embeddings_url,
             model,

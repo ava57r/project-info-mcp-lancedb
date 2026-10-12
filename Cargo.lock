@@ -5268,6 +5268,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "candle-core",
+ "dirs",
  "fastembed",
  "hex",
  "kameo",
