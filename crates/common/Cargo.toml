@@ -4,15 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0"
-async-trait = "0.1"
 dirs = "6"
 hex = "0.4"
-kameo = "0.22"
-rust-mcp-sdk = { version = "2.0", features = ["stdio", "server"] }
-reqwest = { version = "0.13", features = ["json"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
 sha2 = "0.11"
-fastembed = { version = "7", features = ["qwen3"]}
+anyhow = "1.0"
+kameo = "0.22"
+serde_json = "1.0"
+async-trait = "0.1"
 candle-core = { version = "0.11"}
+serde = { version = "1.0", features = ["derive"] }
+fastembed = { version = "7", features = ["qwen3"]}
+reqwest = { version = "0.13", features = ["json"] }
+rust-mcp-sdk = { version = "2.0", features = ["stdio", "server"] }
