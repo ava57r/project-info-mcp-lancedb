@@ -5262,6 +5262,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "piim"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "kameo",
+ "piim-common",
+ "piim-lance",
+ "piim-qdrant",
+ "rust-mcp-sdk",
+ "tokio",
+]
+
+[[package]]
 name = "piim-common"
 version = "0.1.0"
 dependencies = [

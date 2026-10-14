@@ -6,13 +6,13 @@ use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{Html, IntoResponse, Response};
 use serde::Deserialize;
 
-use crate::actors::{
-    DeletePointMessage, ListPointsMessage, OptimizeMessage, ReopenMessage, SearchHit,
-    StatsStructuredMessage, StructuredSearchMessage, UpsertMessage,
-};
 use crate::http::AppState;
 use crate::http::dashboard::{APP_JS, DASHBOARD_HTML, STYLE_CSS};
 use crate::http::snapshots::{self, SnapshotInfo};
+use piim_common::actors::{
+    DeletePointMessage, ListPointsMessage, OptimizeMessage, ReopenMessage, SearchHit,
+    StatsStructuredMessage, StructuredSearchMessage, UpsertMessage,
+};
 
 /// Serves the dashboard SPA page.
 pub async fn dashboard() -> Html<&'static str> {
