@@ -6,7 +6,7 @@ pub mod snapshots;
 
 use kameo::actor::ActorRef;
 
-use crate::actors::project_info::ProjectInfoActor;
+use piim_common::actors::project_info::ProjectInfoActor;
 
 /// Shared state for HTTP handlers.
 #[derive(Clone)]
