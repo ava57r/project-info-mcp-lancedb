@@ -1,16 +1,13 @@
 # piim-qdrant
 
-MCP server for storing and searching project information in Qdrant with vector search.
+Qdrant storage backend library for PIIM (Project Info In MCP). Provides `QdrantStore` and `init_project_actor()` for use with the `piim` binary or any downstream project via the `qdrant_store` Cargo feature.
 
 ## Prerequisites
 
-- **Rust** (compiler)
 - **Qdrant** — vector database server (local or remote)
 - **Embeddings** — either an external API endpoint or local inference via [fastembed-rs](https://github.com/anush008/fastembed-rs)
 
-## Quick Start
-
-### 1. Run Qdrant
+### Running Qdrant
 
 Locally via Docker:
 
@@ -22,7 +19,7 @@ docker run -p 6333:6333 -p 6334:6334 \
 
 Or connect to an existing remote server.
 
-### 2. Environment Variables
+## Environment Variables
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
@@ -36,7 +33,7 @@ Or connect to an existing remote server.
 | `PROJECT_NAME` | No | `default` | Default project scope. Overridable per tool call. |
 | `FASTEMBED_CACHE_DIR` | No | `~/.cache/fastembed` | Custom directory for fastembed model cache. Only used when `EMBEDDINGS_BACKEND=fastembed`. |
 
-### 3. Local Embeddings (fastembed)
+## Local Embeddings (fastembed)
 
 Set `EMBEDDINGS_BACKEND=fastembed` to run embeddings locally without an external API. Models are downloaded once and cached.
 
@@ -90,34 +87,27 @@ export VECTOR_DIMENSION=1024
 export PROJECT_NAME="my-project"
 ```
 
-### 4. Build
+## Usage
 
-```bash
-cargo build --release -p piim-qdrant
+Add `piim-qdrant` as a dependency and call `init_project_actor()` to get a `ProjectInfoActor` backed by Qdrant:
+
+```rust
+use piim_qdrant::init_project_actor;
+
+let actor = init_project_actor().await?;
+// Use the actor with MCP server setup...
 ```
-
-### 4. Run
-
-```bash
-cargo run -p piim-qdrant
-```
-
-The server connects to Qdrant, creates the collection if it doesn't exist, and starts listening via **stdio**.
-
-## Using as an MCP Server
-
-Start it through an MCP client — the server communicates over stdio using the MCP protocol.
 
 ## Client setup (opencode)
 
-Add to `opencode.json`:
+Then add to `opencode.json`:
 
 ```json
 {
   "mcp": {
     "piim": {
       "type": "local",
-      "command": ["/full/path/to/target/release/piim-qdrant"],
+      "command": ["/full/path/to/target/release/piim"],
       "environment": {
         "QDRANT_URL": "http://localhost:6334",
         "EMBEDDINGS_BACKEND": "fastembed",
@@ -137,7 +127,7 @@ For HTTP backend (external embeddings API):
   "mcp": {
     "piim": {
       "type": "local",
-      "command": ["/full/path/to/target/release/piim-qdrant"],
+      "command": ["/full/path/to/target/release/piim"],
       "environment": {
         "QDRANT_URL": "http://localhost:6334",
         "EMBEDDINGS_BACKEND": "http",
@@ -156,13 +146,13 @@ For HTTP backend (external embeddings API):
 
 ## Client setup (Zed)
 
-Add to `~/.config/zed/settings.json`:
+Then add to `~/.config/zed/settings.json`:
 
 ```json
 {
   "mcp": {
     "piim": {
-      "command": "/full/path/to/target/release/piim-qdrant",
+      "command": "/full/path/to/target/release/piim",
       "args": [],
       "env": {
         "QDRANT_URL": "http://localhost:6334",
@@ -181,7 +171,7 @@ Or via `~/.config/zed/mcp.json`:
 {
   "mcp": {
     "piim": {
-      "command": "/full/path/to/target/release/piim-qdrant",
+      "command": "/full/path/to/target/release/piim",
       "args": [],
       "env": {
         "QDRANT_URL": "http://localhost:6334",
@@ -201,7 +191,7 @@ Or via `~/.config/zed/mcp.json`:
 ```
 crates/qdrant/
 ├── src/
-│   ├── main.rs          # Entry point, server initialization
+│   ├── lib.rs           # Library entry, init_project_actor()
 │   ├── config.rs        # Configuration from environment variables
 │   ├── helpers.rs       # Helper functions (collection creation)
 │   ├── store.rs         # Qdrant storage backend implementation
@@ -210,28 +200,6 @@ crates/qdrant/
 ```
 
 The embedding actor and MCP handlers are in the shared `piim-common` crate.
-
-## Architecture
-
-```
-┌──────────────┐     stdio (MCP)     ┌─────────────────┐
-│  MCP Client  │ ◄─────────────────► │  piim-qdrant    │
-│              │                     │  (MCP Server)    │
-└──────────────┘                     └────────┬────────┘
-                                              │
-                    ┌─────────────────────────┼─────────────────────────┐
-                    │                         │                         │
-                    ▼                         ▼                         ▼
-            ┌──────────────┐       ┌─────────────────┐       ┌──────────────┐
-            │ Embedding    │       │ ProjectInfo     │       │   Qdrant     │
-            │ Actor        │──────►│ Actor           │──────►│ (vector DB)  │
-            │ (HTTP/Local) │       │ (memory actor)  │       │              │
-            └──────────────┘       └─────────────────┘       └──────────────┘
-```
-
-The Embedding Actor supports two backends:
-- **HTTP** (`EMBEDDINGS_BACKEND=http`): Calls an external OpenAI-compatible embeddings API
-- **Fastembed** (`EMBEDDINGS_BACKEND=fastembed`): Runs inference locally via [fastembed-rs](https://github.com/anush008/fastembed-rs) (ONNX/Candle)
 
 ## License
 

@@ -1,8 +1,8 @@
 # piim-lance
 
-MCP server for storing and searching project information in embedded [LanceDB](https://lancedb.com) with ANN vector + full-text search, REST API, and dashboard.
+LanceDB storage backend library for PIIM (Project Info In MCP). Provides `LanceStore` and `init_project_actor()` for use with the `piim` binary or any downstream project via the `lance_store` Cargo feature.
 
-Part of the [PIIM (Project Info In MCP)](../../README.md) workspace. Both binaries are driven by **`piim-common`** (`crates/common`): `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), the MCP tool layer, and the `MemoryStore` backend trait. Embeddings come from either an external OpenAI-compatible API (e.g. Qwen3-embed, TEI, vLLM) or local inference via [fastembed-rs](https://github.com/anush008/fastembed-rs) (see [Local embeddings](#local-embeddings-fastembed) below).
+Part of the [PIIM (Project Info In MCP)](../../README.md) workspace. Both backends are driven by **`piim-common`** (`crates/common`): `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), the MCP tool layer, and the `MemoryStore` backend trait. Embeddings come from either an external OpenAI-compatible API (e.g. Qwen3-embed, TEI, vLLM) or local inference via [fastembed-rs](https://github.com/anush008/fastembed-rs) (see [Local embeddings](#local-embeddings-fastembed) below).
 
 ## Features
 
@@ -16,7 +16,6 @@ Part of the [PIIM (Project Info In MCP)](../../README.md) workspace. Both binari
 
 ## Prerequisites
 
-- Rust 1.85+ (edition 2024 workspace; `cargo build`)
 - **Embeddings** — either an external API endpoint or local inference via [fastembed-rs](https://github.com/anush008/fastembed-rs). For the HTTP default:
   ```bash
   curl -X POST http://localhost:8002/v1/embeddings \
@@ -24,36 +23,18 @@ Part of the [PIIM (Project Info In MCP)](../../README.md) workspace. Both binari
     -d '{"input":"hello","model":"qwen3-embed","encoding_format":"float"}'
   ```
 
-## Build & Run
+## Usage
 
-```bash
-cargo build --release -p piim-lance   # LanceDB only
-./target/release/piim-lance           # stdio MCP + HTTP dashboard
+Add `piim-lance` as a dependency and call `init_project_actor()` to get a `ProjectInfoActor` backed by LanceDB:
+
+```rust
+use piim_lance::init_project_actor;
+
+let actor = init_project_actor().await?;
+// Use the actor with MCP server setup...
 ```
 
-Run `piim-lance` with custom config (HTTP backend):
-
-```bash
-LANCEDB_PATH=./.opencode_memory/lance_db \
-EMBEDDINGS_BACKEND=http \
-EMBEDDINGS_URL=http://localhost:8002/v1/embeddings \
-EMBEDDINGS_MODEL=qwen3-embed \
-VECTOR_DIMENSION=1024 \
-PROJECT_NAME=my-project \
-./target/release/piim-lance
-```
-
-Run with local embeddings (no external service):
-
-```bash
-LANCEDB_PATH=./.opencode_memory/lance_db \
-EMBEDDINGS_BACKEND=fastembed \
-EMBEDDINGS_MODEL=bge-small-en \
-PROJECT_NAME=my-project \
-./target/release/piim-lance
-```
-
-## Configuration
+## Environment Variables
 
 | Env var | Default | Description |
 |---|---|---|
@@ -63,7 +44,7 @@ PROJECT_NAME=my-project \
 | `EMBEDDINGS_MODEL` | `qwen3-embed` | Model name: sent as `model` in the HTTP embedding request, or mapped to a local fastembed model (see table below) when `EMBEDDINGS_BACKEND=fastembed`. |
 | `VECTOR_DIMENSION` | `1024` | Expected embedding size; upsert fails fast on mismatch. Ignored when `EMBEDDINGS_BACKEND=fastembed` (dimension is auto-detected from the local model). |
 | `PROJECT_NAME` | `default` | Default project scope for all records; one shared DB can hold many projects. Overridable per tool call via the optional `project` argument. |
-| `HTTP_PORT` | `6333` | Port for the REST API + dashboard (Qdrant-style). Set to `0` or empty to disable HTTP (stdio MCP only). |
+| `HTTP_PORT` | `6333` | Port for the built-in REST API + dashboard (Qdrant-style). Set to `0` or empty to disable HTTP (stdio MCP only). |
 | `SNAPSHOT_DIR` | `./.opencode_memory/snapshots` | Directory where `.tar.gz` DB snapshots are stored. |
 
 > Backend selection is parsed centrally in `piim-common` (`EmbeddingBackend::from_env()`): any other `EMBEDDINGS_BACKEND` value falls back to `http`.
@@ -105,9 +86,10 @@ export PROJECT_NAME="my-project"
 ```
 
 > **Note:** The first run downloads the model (~100MB–8GB depending on model). Subsequent runs use the cached model with no network needed.
+
 ## Dashboard & REST API (Qdrant-style)
 
-Alongside MCP stdio, the server exposes an HTTP API + dashboard on `:HTTP_PORT` (default `6333`):
+Alongside MCP stdio, `init_project_actor()` can expose an HTTP API + dashboard on `:HTTP_PORT` (default `6333`):
 
 - Dashboard: `http://localhost:6333/dashboard` — collection overview, per-project/category stats, point browser (filter + pagination + delete), hybrid search, upsert form, snapshot manager. Page markup, stylesheet, and client script live in `src/http/static/` (`dashboard.html`, `style.css`, `app.js`), baked into the binary via `include_str!` and served at `/dashboard`, `/static/style.css`, `/static/app.js`.
 - `GET /healthz`, `GET /readyz`, `GET /api/version`
@@ -129,14 +111,14 @@ curl 'localhost:6333/api/collections/stats?project=*'
 
 ## Client setup (opencode)
 
-Add to `opencode.json` (HTTP backend):
+Then add to `opencode.json` (HTTP backend):
 
 ```json
 {
   "mcp": {
     "piim": {
       "type": "local",
-      "command": ["/full/path/to/target/release/piim-lance"],
+      "command": ["/full/path/to/target/release/piim"],
       "environment": {
         "LANCEDB_PATH": "./.opencode_memory/lance_db",
         "EMBEDDINGS_BACKEND": "http",
@@ -158,7 +140,7 @@ For local embeddings (fastembed, no external service):
   "mcp": {
     "piim": {
       "type": "local",
-      "command": ["/full/path/to/target/release/piim-lance"],
+      "command": ["/full/path/to/target/release/piim"],
       "environment": {
         "LANCEDB_PATH": "./.opencode_memory/lance_db",
         "EMBEDDINGS_BACKEND": "fastembed",
@@ -173,35 +155,58 @@ For local embeddings (fastembed, no external service):
 
 > Use an absolute `command` path. For the HTTP backend, keep `VECTOR_DIMENSION` in sync with your embedding model, otherwise upserts are rejected; the fastembed backend auto-detects the dimension from `EMBEDDINGS_MODEL`.
 
-On startup the server opens the `project_memory` table, or creates it with the Arrow schema from `src/helpers.rs` if missing. If an existing table lacks the `project` column (created by an older version), the server exits with an error — recreate the table (delete it or use a fresh `LANCEDB_PATH`) instead of migrating.
+## Client setup (Zed)
 
+Then add to `~/.config/zed/settings.json`:
 
-## Tools
+```json
+{
+  "mcp": {
+    "piim": {
+      "command": "/full/path/to/target/release/piim",
+      "args": [],
+      "env": {
+        "LANCEDB_PATH": "./.opencode_memory/lance_db",
+        "EMBEDDINGS_BACKEND": "http",
+        "EMBEDDINGS_URL": "http://localhost:8002/v1/embeddings",
+        "EMBEDDINGS_MODEL": "qwen3-embed",
+        "VECTOR_DIMENSION": "1024",
+        "PROJECT_NAME": "my-project"
+      }
+    }
+  }
+}
+```
 
-| Tool | Arguments | What it does |
-|---|---|---|
-| `upsert_project_info` | `info_id`, `content`, `category`, `project?` (defaults to `PROJECT_NAME`) | Hashes `content` (SHA-256); skips inference if hash matches existing `(id, project)` row; otherwise embeds content via `EmbeddingActor` and adds an Arrow record with current unix timestamp. |
-| `delete_project_info` | `info_id`, `project?` (defaults to `PROJECT_NAME`) | Deletes the record matching `(id, project)`; replies `✅ deleted` or `ℹ️ not found`. |
-| `save_file_description` | `file_path`, `description`, `project?` (defaults to `PROJECT_NAME`) | Upserts a `file`-category record keyed by `(file path, project)`; unchanged descriptions skip embedding, re-saving overwrites. |
-| `save_function_description` | `file_path`, `function_name`, `struct_name?`, `description`, `project?` | Upserts a `function`-category record; SHA-256 dedup skips embedding when unchanged, re-saving overwrites. |
-| `hybrid_search_memory` | `query`, `limit`, `category?`, `project?` (defaults to `PROJECT_NAME`; `"*"` searches all projects) | Embeds `query`, ensures an FTS index on `content`, then runs a hybrid nearest-neighbor query scoped to `project` (unless `"*"`) plus optional `category` filter. Returns matches as `[project:category] id (distance)` plus `content`. |
-| `optimize_database` | _(none — must be called with no arguments)_ | Runs LanceDB `optimize()` / compaction on the table. |
-| `memory_stats` | `project?` (defaults to `PROJECT_NAME`; `"*"` aggregates all projects) | Reports total record count, per-category breakdown, and content size via a single column-projection scan; no embedding inference. |
+Or via `~/.config/zed/mcp.json`:
 
-> **Search tip / known limitation:** hybrid search is vocabulary-driven. Phrase
-> queries with domain + action keywords (e.g. "sign fixation save S3 status
-> propagate", "Keycloak refresh token") rank reliably; exact symbol lookups
-> (e.g. `SignFixationProcessor proceed_fixation`) and verbatim phrases can tie
-> at `0.0000` distance over unrelated records. `optimize_database` (compaction)
-> does not fix this — it needs backend work (embedding model change, FTS weight
-> tuning). See the root [README](../../README.md#search-behavior--known-limitations).
+```json
+{
+  "mcp": {
+    "piim": {
+      "command": "/full/path/to/target/release/piim",
+      "args": [],
+      "env": {
+        "LANCEDB_PATH": "./.opencode_memory/lance_db",
+        "EMBEDDINGS_BACKEND": "http",
+        "EMBEDDINGS_URL": "http://localhost:8002/v1/embeddings",
+        "EMBEDDINGS_MODEL": "qwen3-embed",
+        "VECTOR_DIMENSION": "1024",
+        "PROJECT_NAME": "my-project"
+      }
+    }
+  }
+}
+```
+
+> Use an absolute `command` path. For the HTTP backend, keep `VECTOR_DIMENSION` in sync with your embedding model, otherwise upserts are rejected; the fastembed backend auto-detects the dimension from `EMBEDDINGS_MODEL`.
 
 ## Structure
 
 ```
 crates/lancedb/
 ├── src/
-│   ├── main.rs          # Entry point, stdio wiring, table open/create, HTTP dashboard
+│   ├── lib.rs           # Library entry, init_project_actor()
 │   ├── config.rs        # Configuration from environment variables
 │   ├── helpers.rs       # table_schema() + build_arrow_record()
 │   ├── store.rs         # LanceStore (MemoryStore impl): hybrid/vector queries, hash dedup, FTS index, stats
@@ -214,7 +219,7 @@ The embedding actor and MCP handlers are in the shared `piim-common` crate.
 
 ### Module map
 
-- `src/main.rs` — stdio wiring, table open/create (+ fail-fast check for the `project` column on old tables), actor spawn, MCP `Server::start()`, HTTP dashboard.
+- `src/lib.rs` — `init_project_actor()`: opens/creates the `project_memory` table (+ fail-fast check for the `project` column on old tables), spawns actors, starts HTTP dashboard.
 - `src/config.rs` — `Config::get_from_env()` with defaults above.
 - `src/store.rs` — `LanceStore` (`MemoryStore` impl): hybrid/vector queries, hash-dedup precheck, FTS index creation, column-projection stats.
 - `src/helpers.rs` — `table_schema()` + `build_arrow_record()` (validates `vector.len() == VECTOR_DIMENSION`).
