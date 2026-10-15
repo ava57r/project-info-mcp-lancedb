@@ -14,7 +14,7 @@ async-trait = "0.1"
 tokio-stream = "0.1"
 qdrant-client = "1.19"
 uuid = { version = "1.27", features = ["v4"] }
-tokio = { version = "1.38", features = ["full"] }
+tokio = { version = "1.53", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 reqwest = { version = "0.13", features = ["json"] }
 rust-mcp-sdk = { version = "2.0", features = ["stdio", "server"] }
