@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         feature_set:
-          - default
+          - --features default
           - --no-default-features --features qdrant_store
 
     runs-on: ubuntu-latest
