@@ -4,10 +4,10 @@ A persistent project-memory MCP server in Rust. Stores discrete facts (architect
 
 This repository is a Cargo workspace with two storage backends sharing one core:
 
-- **`piim-lance`** — embedded [LanceDB](https://lancedb.com) storage ([`crates/lancedb`](crates/lancedb), see its [README](crates/lancedb/README.md)) with ANN vector + full-text search, REST API, and dashboard.
-- **`piim-qdrant`** — remote [Qdrant](https://qdrant.tech) storage ([`crates/qdrant`](crates/qdrant), see its [README](crates/qdrant/README.md)).
+- **LanceDB backend** — embedded [LanceDB](https://lancedb.com) storage ([`crates/lancedb`](crates/lancedb), see its [README](crates/lancedb/README.md)) with ANN vector + full-text search, REST API, and dashboard.
+- **Qdrant backend** — remote [Qdrant](https://qdrant.tech) storage ([`crates/qdrant`](crates/qdrant), see its [README](crates/qdrant/README.md)).
 
-Both binaries are driven by **`piim-common`** ([`crates/common`](crates/common)): `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), the MCP tool layer, and the `MemoryStore` backend trait. Embeddings come from any OpenAI-compatible API (e.g. Qwen3-embed, TEI, vLLM).
+Both backends are driven by **`piim-common`** ([`crates/common`](crates/common)): `kameo` actors (`ProjectInfoActor` + `EmbeddingActor`), the MCP tool layer, and the `MemoryStore` backend trait. Embeddings come from any OpenAI-compatible API (e.g. Qwen3-embed, TEI, vLLM) or locally via [fastembed-rs](https://github.com/anush008/fastembed-rs).
 
 ## Features
 
@@ -26,43 +26,55 @@ Both binaries are driven by **`piim-common`** ([`crates/common`](crates/common))
 
 ## Build & Run
 
-### Workspace binaries
+### The `piim` binary (feature-gated)
+
+The `piim` package selects its storage backend via Cargo features. `lance_store` is the **default**.
+
+Build with LanceDB backend (default):
 
 ```bash
-cargo build --release                # whole workspace (piim-lance + piim-qdrant)
-./target/release/piim-lance          # LanceDB backend (stdio MCP + HTTP dashboard)
-./target/release/piim-qdrant         # Qdrant backend (stdio MCP)
+cargo build --release -p piim --features lance_store
 ```
 
-Build a single workspace binary:
+Build with LanceDB backend (explicit, without default features):
 
 ```bash
-cargo build --release -p piim-lance      # LanceDB only
-cargo build --release -p piim-qdrant     # Qdrant only
-```
-
-### `piim` binary (feature-gated)
-
-The `piim` package selects its storage backend via Cargo features. `lance_store` is the **default**; use `--no-default-features` to pick the other:
-
-```bash
-cargo build --release -p piim --features lance_store          # LanceDB backend
-# — or with --no-default-features (default features are lance_store)
 cargo build --release -p piim --no-default-features --features lance_store
+```
 
-cargo build --release -p piim --no-default-features --features qdrant_store   # Qdrant backend
+Build with Qdrant backend:
+
+```bash
+cargo build --release -p piim --no-default-features --features qdrant_store
+```
+
+Run the selected backend:
+
+```bash
+./target/release/piim
+```
+
+### Backend libraries
+
+The `crates/lancedb` and `crates/qdrant` crates are library-only — they provide `init_project_actor()` and the backend-specific `MemoryStore` implementation. The `piim` binary (or any downstream project) depends on the chosen backend via Cargo features.
+
+The `piim-lance` crate still ships its own `main.rs` binary for standalone use:
+
+```bash
+cargo build --release -p piim-lance      # LanceDB binary (standalone, with dashboard)
+./target/release/piim-lance              # LanceDB backend (stdio MCP + HTTP dashboard)
 ```
 
 ## Configuration
 
 Shared env vars (used by both backends): `EMBEDDINGS_URL` (`http://localhost:8002/v1/embeddings`), `EMBEDDINGS_MODEL` (`qwen3-embed`), `VECTOR_DIMENSION` (`1024`), `PROJECT_NAME` (`default`). Backend-specific storage settings:
 
-- `piim-lance`: `LANCEDB_PATH`, `HTTP_PORT`, `SNAPSHOT_DIR` — see [crates/lancedb/README.md](crates/lancedb/README.md).
-- `piim-qdrant`: `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_COLLECTION` — see [crates/qdrant/README.md](crates/qdrant/README.md).
+- **LanceDB** (`piim --features lance_store` / `piim-lance`): `LANCEDB_PATH`, `HTTP_PORT`, `SNAPSHOT_DIR` — see [crates/lancedb/README.md](crates/lancedb/README.md).
+- **Qdrant** (`piim --no-default-features --features qdrant_store`): `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_COLLECTION`, `EMBEDDINGS_BACKEND` — see [crates/qdrant/README.md](crates/qdrant/README.md).
 
 ## Client setup (opencode)
 
-See the backend READMEs for copy-paste configs: [piim-lance](crates/lancedb/README.md#client-setup-opencode) and [piim-qdrant](crates/qdrant/README.md).
+See the backend READMEs for copy-paste configs: [LanceDB](crates/lancedb/README.md#client-setup-opencode) and [Qdrant](crates/qdrant/README.md).
 
 ## Tools
 
@@ -90,7 +102,7 @@ consistently hits.
 
 ## LanceDB vs Qdrant — the databases compared
 
-This repo pins `lancedb` **0.40.0** (`piim-lance`) and `qdrant-client` **1.19** (`piim-qdrant`), but the choice between backends is really a choice between two different database philosophies. Both are Apache-2.0 open source and written in Rust.
+This repo pins `lancedb` **0.40.0** (LanceDB backend) and `qdrant-client` **1.19** (Qdrant backend), but the choice between backends is really a choice between two different database philosophies. Both are Apache-2.0 open source and written in Rust.
 
 | | LanceDB | Qdrant |
 |---|---|---|
@@ -105,11 +117,11 @@ This repo pins `lancedb` **0.40.0** (`piim-lance`) and `qdrant-client` **1.19** 
 
 ## LanceDB vs Qdrant — which backend to pick?
 
-Both binaries expose the same 7 MCP tools and share the `piim-common` core (actors, `MemoryStore` trait, HTTP/fastembed embedding backends, `PROJECT_NAME` scoping). They differ only in where and how vectors are stored.
+Both backends expose the same 7 MCP tools and share the `piim-common` core (actors, `MemoryStore` trait, HTTP/fastembed embedding backends, `PROJECT_NAME` scoping). They differ only in where and how vectors are stored.
 
-| | `piim-lance` (embedded LanceDB) | `piim-qdrant` (remote Qdrant) |
+| | LanceDB backend (`piim --features lance_store`, `piim-lance`) | Qdrant backend (`piim --no-default-features --features qdrant_store`) |
 |---|---|---|
-| Crate / version used | `lancedb` **0.40.0** (`crates/lancedb/Cargo.toml`), binary `piim-lance` 0.1.0 | `qdrant-client` **1.19** (`crates/qdrant/Cargo.toml`), binary `piim-qdrant` 0.3.1 |
+| Crate / version used | `lancedb` **0.40.0** (`crates/lancedb/Cargo.toml`), binary `piim-lance` 0.2.0 | `qdrant-client` **1.19** (`crates/qdrant/Cargo.toml`), library `piim-qdrant` 0.3.1 |
 | Deployment | Embedded — no extra service. Data lives in a local directory (`LANCEDB_PATH`, default `./.opencode_memory/lance_db`). | Remote server — requires a running Qdrant (`QDRANT_URL`, default `http://localhost:6333`, e.g. `docker run -p 6333:6333 qdrant/qdrant`). Optional `QDRANT_API_KEY` auth. |
 | Storage unit | One Arrow table `project_memory` (`id`, `project`, `content`, `vector`, `category`, `file_hash`, `timestamp`). | One collection (`QDRANT_COLLECTION`, default `project_memory`); each record is a point with a UUID point-id and the same fields as JSON payload. |
 | Search | True hybrid: ANN vector search + FTS index on `content` (index auto-created on first search), with `project`/`category` SQL predicates. | Filtered vector search (Cosine distance) via `SearchPointsBuilder` with payload filters on `project`/`category`. No FTS index — keyword matching relies on embeddings. |
@@ -134,20 +146,22 @@ Both binaries expose the same 7 MCP tools and share the `piim-common` core (acto
                                  │ MemoryStore (crates/common/src/store.rs)
                  ┌───────────────┴───────────────┐
                  ▼                               ▼
-   crates/lancedb  (piim-lance)         crates/qdrant  (piim-qdrant)
-   LanceStore: table open/create,     QdrantStore: client, points & filters,
-   Arrow records, hybrid query,       hybrid/structured search, counts,
-   hash dedup, FTS index, optimize,   payload stats, optimize, collection
-   snapshots, REST API + dashboard    creation
+   crates/lancedb  (LanceDB backend)    crates/qdrant  (Qdrant backend)
+   LanceStore: table open/create,       QdrantStore: client, points & filters,
+   Arrow records, hybrid query,         hybrid/structured search, counts,
+   hash dedup, FTS index, optimize,     payload stats, optimize, collection
+   snapshots, REST API + dashboard      creation
 ```
 
 | Crate | Package | Role |
 |---|---|---|
 | [`crates/common`](crates/common) | `piim-common` | Shared core: `MemoryStore` trait, `CommonConfig` (shared env parsing), `ProjectInfoActor` + all message handlers, `EmbeddingActor`, MCP server + tool definitions, search/stats text formatting. |
-| [`crates/lancedb`](crates/lancedb) | `piim-lance` | LanceDB backend binary (see its [README](crates/lancedb/README.md)). |
-| [`crates/qdrant`](crates/qdrant) | `piim-qdrant` | Qdrant backend binary. |
+| [`crates/lancedb`](crates/lancedb) | `piim-lance` | LanceDB backend library (exports `init_project_actor()`) + standalone binary. See [README](crates/lancedb/README.md). |
+| [`crates/qdrant`](crates/qdrant) | `piim-qdrant` | Qdrant backend **library only** (exports `init_project_actor()`). See [README](crates/qdrant/README.md). |
 
-Backend-specific behavior — query construction, error messages, `optimize`/`reopen` wording, the empty-stats noun ("table" vs "collection") — lives entirely inside each `MemoryStore` implementation, so adding a backend means implementing the trait plus a thin `main.rs`/`config.rs`.
+The root [`piim`](.) package is the binary: it selects the backend at compile time via Cargo features (`lance_store` default, `qdrant_store`). The binary calls `init_project_actor()` from the chosen backend crate and wires it into the MCP server.
+
+Backend-specific behavior — query construction, error messages, `optimize`/`reopen` wording, the empty-stats noun ("table" vs "collection") — lives entirely inside each `MemoryStore` implementation, so adding a backend means implementing the trait plus providing `init_project_actor()`.
 
 ## Development
 

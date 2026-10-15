@@ -4,11 +4,11 @@ members = ["crates/common", "crates/lancedb", "crates/qdrant"]
 
 [package]
 name = "piim"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.38", features = ["full"] }
+tokio = { version = "1.53", features = ["full"] }
 rust-mcp-sdk = { version = "2.0", features = ["stdio", "server"] }
 cfg-if = "1.0.5"
 kameo = "0.22"
