@@ -201,26 +201,6 @@ Or via `~/.config/zed/mcp.json`:
 
 > Use an absolute `command` path. For the HTTP backend, keep `VECTOR_DIMENSION` in sync with your embedding model, otherwise upserts are rejected; the fastembed backend auto-detects the dimension from `EMBEDDINGS_MODEL`.
 
-## Tools
-
-| Tool | Arguments | What it does |
-|---|---|---|
-| `upsert_project_info` | `info_id`, `content`, `category`, `project?` (defaults to `PROJECT_NAME`) | Hashes `content` (SHA-256); skips inference if hash matches existing `(id, project)` row; otherwise embeds content via `EmbeddingActor` and adds an Arrow record with current unix timestamp. |
-| `delete_project_info` | `info_id`, `project?` (defaults to `PROJECT_NAME`) | Deletes the record matching `(id, project)`; replies ✅ deleted or ℹ️ not found. |
-| `save_file_description` | `file_path`, `description`, `project?` (defaults to `PROJECT_NAME`) | Upserts a `file`-category record keyed by `(file path, project)`; unchanged descriptions skip embedding, re-saving overwrites. |
-| `save_function_description` | `file_path`, `function_name`, `struct_name?`, `description`, `project?` | Upserts a `function`-category record; SHA-256 dedup skips embedding when unchanged, re-saving overwrites. |
-| `hybrid_search_memory` | `query`, `limit`, `category?`, `project?` (defaults to `PROJECT_NAME`; `"*"` searches all projects) | Embeds `query`, ensures an FTS index on `content`, then runs a hybrid nearest-neighbor query scoped to `project` (unless `"*"`) plus optional `category` filter. Returns matches as `[project:category] id (distance)` plus `content`. |
-| `optimize_database` | _(none — must be called with no arguments)_ | Runs LanceDB `optimize()` / compaction on the table. |
-| `memory_stats` | `project?` (defaults to `PROJECT_NAME`; `"*"` aggregates all projects) | Reports total record count, per-category breakdown, and content size via a single column-projection scan; no embedding inference. |
-
-> **Search tip / known limitation:** hybrid search is vocabulary-driven. Phrase
-> queries with domain + action keywords (e.g. "sign fixation save S3 status
-> propagate", "Keycloak refresh token") rank reliably; exact symbol lookups
-> (e.g. `SignFixationProcessor proceed_fixation`) and verbatim phrases can tie
-> at `0.0000` distance over unrelated records. `optimize_database` (compaction)
-> does not fix this — it needs backend work (embedding model change, FTS weight
-> tuning). See the root [README](../../README.md#search-behavior--known-limitations).
-
 ## Structure
 
 ```

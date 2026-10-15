@@ -71,7 +71,17 @@ See the backend READMEs for copy-paste configs: [LanceDB](crates/lancedb/README.
 
 ## Tools
 
-Both backends expose the same 7 MCP tools (`upsert_project_info`, `delete_project_info`, `save_file_description`, `save_function_description`, `hybrid_search_memory`, `optimize_database`, `memory_stats`). See [crates/lancedb/README.md](crates/lancedb/README.md#tools) for the argument table.
+Both backends expose the same 7 MCP tools:
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `upsert_project_info` | `info_id`, `content`, `category`, `project?` (defaults to `PROJECT_NAME`) | Hashes `content` (SHA-256); skips inference if hash matches existing `(id, project)` row; otherwise embeds content via `EmbeddingActor` and adds an Arrow record with current unix timestamp. |
+| `delete_project_info` | `info_id`, `project?` (defaults to `PROJECT_NAME`) | Deletes the record matching `(id, project)`; replies ✅ deleted or ℹ️ not found. |
+| `save_file_description` | `file_path`, `description`, `project?` (defaults to `PROJECT_NAME`) | Upserts a `file`-category record keyed by `(file path, project)`; unchanged descriptions skip embedding, re-saving overwrites. |
+| `save_function_description` | `file_path`, `function_name`, `struct_name?`, `description`, `project?` | Upserts a `function`-category record; SHA-256 dedup skips embedding when unchanged, re-saving overwrites. |
+| `hybrid_search_memory` | `query`, `limit`, `category?`, `project?` (defaults to `PROJECT_NAME`; `"*"` searches all projects) | Embeds `query`, ensures an FTS index on `content`, then runs a hybrid nearest-neighbor query scoped to `project` (unless `"*"`) plus optional `category` filter. Returns matches as `[project:category] id (distance)` plus `content`. |
+| `optimize_database` | _(none — must be called with no arguments)_ | Runs backend-specific optimization (LanceDB compaction; Qdrant is a no-op). |
+| `memory_stats` | `project?` (defaults to `PROJECT_NAME`; `"*"` aggregates all projects) | Reports total record count, per-category breakdown, and content size via a single column-projection scan; no embedding inference. |
 
 ## Search behavior & known limitations
 
