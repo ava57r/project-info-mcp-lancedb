@@ -11,6 +11,12 @@ env:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        feature_set:
+          - default
+          - --no-default-features --features qdrant_store
 
     runs-on: ubuntu-latest
 
@@ -21,6 +27,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y protobuf-compiler
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose ${{ matrix.feature_set }}
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --verbose ${{ matrix.feature_set }}
