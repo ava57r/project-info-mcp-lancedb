@@ -26,17 +26,31 @@ Both binaries are driven by **`piim-common`** ([`crates/common`](crates/common))
 
 ## Build & Run
 
+### Workspace binaries
+
 ```bash
 cargo build --release                # whole workspace (piim-lance + piim-qdrant)
 ./target/release/piim-lance          # LanceDB backend (stdio MCP + HTTP dashboard)
 ./target/release/piim-qdrant         # Qdrant backend (stdio MCP)
 ```
 
-Build a single binary:
+Build a single workspace binary:
 
 ```bash
 cargo build --release -p piim-lance      # LanceDB only
 cargo build --release -p piim-qdrant     # Qdrant only
+```
+
+### `piim` binary (feature-gated)
+
+The `piim` package selects its storage backend via Cargo features. `lance_store` is the **default**; use `--no-default-features` to pick the other:
+
+```bash
+cargo build --release -p piim --features lance_store          # LanceDB backend
+# — or with --no-default-features (default features are lance_store)
+cargo build --release -p piim --no-default-features --features lance_store
+
+cargo build --release -p piim --no-default-features --features qdrant_store   # Qdrant backend
 ```
 
 ## Configuration
