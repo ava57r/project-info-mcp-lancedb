@@ -4,7 +4,7 @@ members = ["crates/common", "crates/lancedb", "crates/qdrant"]
 
 [package]
 name = "piim"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
@@ -21,3 +21,8 @@ piim-common = { path = "crates/common" }
 default = ["lance_store"]
 qdrant_store = ["dep:piim-qdrant"]
 lance_store = ["dep:piim-lance"]
+fastembed = [
+    "piim-common/fastembed",
+    "piim-lance/fastembed",
+    "piim-qdrant/fastembed",
+]

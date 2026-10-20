@@ -1,4 +1,5 @@
 pub mod config;
+#[cfg(feature = "fastembed")]
 pub mod fastembed;
 pub mod http;
 
