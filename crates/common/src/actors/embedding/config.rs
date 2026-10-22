@@ -8,6 +8,7 @@ pub enum EmbeddingBackend {
     /// Use an external OpenAI-compatible HTTP endpoint.
     Http,
     /// Use local inference via fastembed.
+    #[cfg(feature = "fastembed")]
     Fastembed(super::fastembed::FastembedModel),
 }
 
@@ -18,6 +19,7 @@ impl EmbeddingBackend {
     /// When `fastembed`, the model is resolved from `EMBEDDINGS_MODEL`.
     pub fn from_env() -> Self {
         match env::var("EMBEDDINGS_BACKEND").ok().as_deref() {
+            #[cfg(feature = "fastembed")]
             Some("fastembed") => {
                 let model_name =
                     env::var("EMBEDDINGS_MODEL").unwrap_or_else(|_| "qwen3-embed".to_string());
@@ -25,7 +27,10 @@ impl EmbeddingBackend {
                     &model_name,
                 ))
             }
+            #[cfg(feature = "fastembed")]
             Some(_) | None => Self::Http,
+            #[cfg(not(feature = "fastembed"))]
+            _ => Self::Http,
         }
     }
 
@@ -36,6 +41,7 @@ impl EmbeddingBackend {
                 // For HTTP we fall back to the common config value
                 CommonConfig::from_env().vector_dimension
             }
+            #[cfg(feature = "fastembed")]
             Self::Fastembed(model) => model.dimension(),
         }
     }

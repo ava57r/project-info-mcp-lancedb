@@ -5263,7 +5263,7 @@ dependencies = [
 
 [[package]]
 name = "piim"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "cfg-if",
  "kameo",
@@ -5276,7 +5276,7 @@ dependencies = [
 
 [[package]]
 name = "piim-common"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5294,7 +5294,7 @@ dependencies = [
 
 [[package]]
 name = "piim-lance"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -5317,7 +5317,7 @@ dependencies = [
 
 [[package]]
 name = "piim-qdrant"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "async-trait",

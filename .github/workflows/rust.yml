@@ -17,6 +17,9 @@ jobs:
         feature_set:
           - --features default
           - --no-default-features --features qdrant_store
+          - --no-default-features --features fastembed
+          - --no-default-features --features "fastembed,lance_store"
+          - --no-default-features --features "fastembed,qdrant_store"
 
     runs-on: ubuntu-latest
 

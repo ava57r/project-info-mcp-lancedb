@@ -19,6 +19,11 @@ async fn main() -> SdkResult<()> {
             feature = "lance_store" => {
                 piim_lance::init_project_actor().await?
             }
+            _ => {
+                return Err(rust_mcp_sdk::error::McpSdkError::Internal {
+                    description: "No memory backend selected. Enable either `qdrant_store` or `lance_store` feature.".into(),
+                })
+            }
     };
     let server_details = server_details();
 

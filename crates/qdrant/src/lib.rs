@@ -1,6 +1,8 @@
 use kameo::actor::{ActorRef, Spawn};
+#[cfg(feature = "fastembed")]
+use piim_common::actors::embedding::fastembed;
 use piim_common::actors::{
-    embedding::{self, config::EmbeddingBackend, fastembed, http},
+    embedding::{self, config::EmbeddingBackend, http},
     project_info::ProjectInfoActor,
 };
 use qdrant_client::Qdrant;
@@ -46,6 +48,7 @@ pub async fn init_project_actor() -> SdkResult<ActorRef<ProjectInfoActor>> {
             config.model.clone(),
             None,
         )) as Box<dyn embedding::Embedder>,
+        #[cfg(feature = "fastembed")]
         EmbeddingBackend::Fastembed(model) => {
             let actor = fastembed::EmbeddingActor::new_fastembed(model.clone()).map_err(|e| {
                 rust_mcp_sdk::error::McpSdkError::Internal {
